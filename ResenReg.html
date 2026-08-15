@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizador de Resenhas & Frevos - Planilha Inteligente</title>
+    <!-- Firebase SDK (comente ou substitua pela sua configuração) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --accent: #ff6b6b;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --bg-dark: #1e1e2f;
+            --bg-light: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #333;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes highlight {
+            0% { background-color: rgba(106, 17, 203, 0.2); }
+            100% { background-color: transparent; }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            animation: slideIn 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header .actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 25px;
+            background: white;
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            background: #f0f0f0;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #ff5252;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a0cb0;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .timeline-section {
+            flex: 1 1 100%;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .timeline-section h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #timelineCanvas {
+            width: 100%;
+            height: 120px;
+            border-radius: 8px;
+            background: #f0f2f5;
+            display: block;
+        }
+
+        .sidebar {
+            flex: 1 1 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: slideIn 0.8s ease;
+        }
+
+        .calendar-card, .agenda-card, .summary-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+        }
+
+        .calendar-card h2, .agenda-card h2, .summary-card h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+
+        .calendar-day-header {
+            font-weight: 700;
+            color: #666;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .calendar-day {
+            padding: 10px 0;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: rgba(106, 17, 203, 0.1);
+            transform: scale(1.1);
+        }
+
+        .calendar-day.today {
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            animation: pulse 2s infinite;
+        }
+
+        .calendar-day.has-event {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid var(--accent);
+        }
+
+        .calendar-day.selected {
+            background: var(--secondary);
+            color: white;
+            box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.3);
+        }
+
+        .agenda-list {
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .agenda-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .agenda-item .info {
+            flex: 1;
+        }
+
+        .agenda-item .date {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .agenda-item .description {
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .agenda-item .badge {
+            background: var(--accent);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .summary-card .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-card .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-card .value {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .variation-up {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .variation-down {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .spreadsheet-section {
+            flex: 3 1 600px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            animation: fadeIn 1s ease;
+        }
+
+        .spreadsheet-section h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .spreadsheet-container {
+            overflow-x: auto;
+            max-height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 800px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            min-width: 100px;
+            position: relative;
+        }
+
+        th {
+            background: #f0f0f0;
+            font-weight: 600;
+            text-align: center;
+            padding: 8px 4px;
+            user-select: none;
+        }
+
+        .cell {
+            min-height: 30px;
+            padding: 6px 8px;
+            outline: none;
+            cursor: cell;
+            transition: background 0.2s;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .cell:focus {
+            background: #fffde7;
+            box-shadow: inset 0 0 0 2px var(--secondary);
+        }
+
+        .cell.formula {
+            background: #e3f2fd;
+            font-family: 'Courier New', monospace;
+            color: #1565c0;
+        }
+
+        .cell.rendered {
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        .cell.rendered:hover {
+            background: #f0f0f0;
+        }
+
+        .delete-row-btn {
+            background: none;
+            border: none;
+            color: #ff5252;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0 5px;
+            opacity: 0.5;
+            transition: var(--transition);
+        }
+
+        .delete-row-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .chart-container {
+            margin-top: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .chart-placeholder {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            .header {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🎉 Organizador de Resenhas & Frevos</h1>
+        <div class="actions">
+            <button class="btn" id="saveBtn">💾 Salvar</button>
+            <button class="btn" id="loadBtn">📂 Carregar</button>
+            <button class="btn btn-primary" id="recalcBtn">🔄 Recalcular</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Timeline -->
+        <section class="timeline-section">
+            <h2>📅 Timeline do Mês</h2>
+            <canvas id="timelineCanvas"></canvas>
+        </section>
+
+        <!-- Sidebar com Calendário, Agenda e Resumo -->
+        <aside class="sidebar">
+            <div class="calendar-card">
+                <h2>📆 Calendário</h2>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div class="agenda-card">
+                <h2>📋 Agenda do Dia</h2>
+                <div class="agenda-list" id="agendaList">
+                    <p style="color:#999">Selecione um dia para ver eventos</p>
+                </div>
+            </div>
+            <div class="summary-card">
+                <h2>💰 Resumo Financeiro</h2>
+                <div id="summaryContent">
+                    <p style="color:#999">Sem dados</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Planilha estilo Excel -->
+        <section class="spreadsheet-section">
+            <h2>📊 Planilha Inteligente</h2>
+            <div class="toolbar">
+                <button class="btn" id="addRowBtn">➕ Linha</button>
+                <button class="btn" id="addColBtn">➕ Coluna</button>
+                <button class="btn" id="renderBtn">🎨 Renderizar HTML</button>
+                <button class="btn" id="chartBtn">📈 Gráfico</button>
+            </div>
+            <div class="spreadsheet-container">
+                <table id="spreadsheetTable">
+                    <thead>
+                        <tr id="tableHeader">
+                            <th>Data</th>
+                            <th>Evento</th>
+                            <th>Minas</th>
+                            <th>Receber (R$)</th>
+                            <th>Despesas (R$)</th>
+                            <th>Saldo (R$)</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Linhas serão adicionadas dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="chart-container" id="chartContainer">
+                <span class="chart-placeholder">Clique em "Gerar Gráfico" para visualizar dados</span>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // ============ CONFIGURAÇÃO FIREBASE (SUBSTITUA COM SEUS DADOS) ============
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "seu-projeto.firebaseapp.com",
+            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com",
+            projectId: "seu-projeto",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "SEU_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        let firebaseInitialized = false;
+        let database = null;
+
+        function initFirebase() {
+            try {
+                if (firebaseConfig.apiKey !== "SUA_API_KEY") {
+                    firebase.initializeApp(firebaseConfig);
+                    database = firebase.database();
+                    firebaseInitialized = true;
+                    console.log("Firebase inicializado com sucesso!");
+                } else {
+                    console.warn("Firebase não configurado. Usando localStorage.");
+                }
+            } catch (e) {
+                console.error("Erro ao inicializar Firebase:", e);
+            }
+        }
+
+        // ============ DADOS ============
+        let events = [];
+        let selectedDate = new Date().toISOString().slice(0, 10);
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        // Planilha: array 2D de strings (código HTML ou fórmulas)
+        let spreadsheetData = [
+            ["2024-01-15", "Festa na Praia", "5", "200", "50", "=D2-E2", "<div style='background:linear-gradient(90deg,#ff6b6b,#ffa502);height:20px;width:80px;border-radius:5px'></div>"],
+            ["2024-01-20", "Resenha do Grupo", "8", "350", "80", "=D3-E3", ""],
+            ["", "", "", "", "", "=D4-E4", ""],
+            ["", "", "", "", "", "=D5-E5", ""],
+            ["", "", "", "", "", "=D6-E6", ""]
+        ];
+
+        // ============ REFERÊNCIAS DE CÉLULAS ============
+        function columnLettersToNumber(letters) {
+            letters = letters.toUpperCase();
+            let result = 0;
+            for (let i = 0; i < letters.length; i++) {
+                result = result * 26 + (letters.charCodeAt(i) - 64);
+            }
+            return result;
+        }
+
+        function cellReferenceToRowCol(ref) {
+            const match = ref.match(/([A-Z]+)(\d+)/);
+            if (!match) return null;
+            const col = columnLettersToNumber(match[1]) - 1;
+            const row = parseInt(match[2]) - 1;
+            return { row, col };
+        }
+
+        function getCellValue(row, col) {
+            if (row < spreadsheetData.length && col < spreadsheetData[row].length) {
+                const raw = spreadsheetData[row][col];
+                if (raw && raw.startsWith('=')) {
+                    try {
+                        return evaluateFormula(raw, new Set());
+                    } catch (e) {
+                        return 0;
+                    }
+                }
+                const num = Number(raw);
+                if (!isNaN(num) && raw.trim() !== '') {
+                    return num;
+                }
+                return raw || 0;
+            }
+            return 0;
+        }
+
+        // ============ AVALIADOR DE FÓRMULAS ============
+        function evaluateFormula(formula, visitedCells = new Set()) {
+            let expr = formula.substring(1).trim();
+            if (expr === '') return '';
+
+            expr = expr.replace(/\b([A-Z]+)(\d+)\b/g, (match, colLetters, rowNum) => {
+                const ref = match;
+                const cellKey = colLetters + rowNum;
+                const { row, col } = cellReferenceToRowCol(ref);
+                if (visitedCells.has(cellKey)) {
+                    throw new Error('Circular reference');
+                }
+                visitedCells.add(cellKey);
+                let val;
+                try {
+                    val = getCellValue(row, col);
+                } catch (e) {
+                    val = 0;
+                }
+                visitedCells.delete(cellKey);
+                if (typeof val === 'number') {
+                    return val;
+                } else {
+                    return '"' + String(val).replace(/"/g, '\\"') + '"';
+                }
+            });
+
+            expr = expr.replace(/;/g, ',');
+
+            const SE = (cond, valTrue, valFalse) => cond ? valTrue : valFalse;
+            const SOMA = (...args) => args.reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+
+            try {
+                const fn = new Function('SE', 'SOMA', `"use strict"; return (${expr});`);
+                return fn(SE, SOMA);
+            } catch (e) {
+                console.warn('Erro na fórmula:', formula, e);
+                return '#ERRO!';
+            }
+        }
+
+        // ============ RENDERIZAÇÃO DA PLANILHA ============
+        function renderSpreadsheet() {
+            const tbody = document.getElementById('tableBody');
+            const thead = document.getElementById('tableHeader');
+            tbody.innerHTML = '';
+
+            const baseHeaders = ['Data', 'Evento', 'Minas', 'Receber (R$)', 'Despesas (R$)', 'Saldo (R$)', 'Observações'];
+            while (thead.children.length > spreadsheetData[0].length) {
+                thead.removeChild(thead.lastChild);
+            }
+            for (let i = 0; i < spreadsheetData[0].length; i++) {
+                if (i >= thead.children.length) {
+                    const th = document.createElement('th');
+                    th.textContent = `Col ${i+1}`;
+                    th.contentEditable = true;
+                    th.addEventListener('blur', () => {});
+                    thead.appendChild(th);
+                } else {
+                    if (i < baseHeaders.length) {
+                        thead.children[i].textContent = baseHeaders[i];
+                    }
+                }
+            }
+
+            spreadsheetData.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                row.forEach((cellData, colIndex) => {
+                    const td = document.createElement('td');
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    cellDiv.contentEditable = 'false';
+                    cellDiv.dataset.row = rowIndex;
+                    cellDiv.dataset.col = colIndex;
+
+                    if (cellData && cellData.trim().startsWith('=')) {
+                        cellDiv.classList.add('formula');
+                        try {
+                            const result = evaluateFormula(cellData);
+                            cellDiv.textContent = (typeof result === 'number') ? result : result.toString();
+                        } catch (e) {
+                            cellDiv.textContent = '#ERRO!';
+                        }
+                        cellDiv.dataset.raw = cellData;
+                        cellDiv.title = cellData;
+                    } else if (cellData && cellData.trim().startsWith('<') && cellData.trim().endsWith('>')) {
+                        cellDiv.innerHTML = cellData;
+                        cellDiv.classList.add('rendered');
+                        cellDiv.dataset.raw = cellData;
+                    } else {
+                        cellDiv.textContent = cellData;
+                        cellDiv.dataset.raw = cellData;
+                    }
+
+                    cellDiv.addEventListener('dblclick', () => {
+                        if (cellDiv.classList.contains('formula')) {
+                            cellDiv.textContent = cellDiv.dataset.raw;
+                            cellDiv.classList.remove('formula');
+                            cellDiv.contentEditable = 'true';
+                            cellDiv.focus();
+                        } else if (cellDiv.classList.contains('rendered')) {
+                            cellDiv.textContent = cellDiv.dataset.raw;
+                            cellDiv.classList.remove('rendered');
+                            cellDiv.contentEditable = 'true';
+                            cellDiv.focus();
+                        } else {
+                            cellDiv.contentEditable = 'true';
+                            cellDiv.focus();
+                        }
+                    });
+
+                    cellDiv.addEventListener('blur', () => {
+                        const rawValue = cellDiv.textContent;
+                        const row = parseInt(cellDiv.dataset.row);
+                        const col = parseInt(cellDiv.dataset.col);
+                        if (row < spreadsheetData.length && col < spreadsheetData[row].length) {
+                            spreadsheetData[row][col] = rawValue;
+                        }
+                        cellDiv.contentEditable = 'false';
+                        renderSpreadsheet();
+                        syncEventsFromSpreadsheet();
+                        renderSummary();
+                        renderTimeline();
+                    });
+
+                    td.appendChild(cellDiv);
+                    tr.appendChild(td);
+                });
+
+                const tdDelete = document.createElement('td');
+                tdDelete.style.width = '30px';
+                tdDelete.style.textAlign = 'center';
+                tdDelete.innerHTML = `<button class="delete-row-btn" title="Deletar linha">✕</button>`;
+                tdDelete.querySelector('.delete-row-btn').addEventListener('click', () => {
+                    spreadsheetData.splice(rowIndex, 1);
+                    renderSpreadsheet();
+                    syncEventsFromSpreadsheet();
+                    renderSummary();
+                    renderTimeline();
+                });
+                tr.appendChild(tdDelete);
+
+                tbody.appendChild(tr);
+            });
+
+            syncEventsFromSpreadsheet();
+            renderSummary();
+        }
+
+        // Sincronizar eventos a partir da planilha
+        function syncEventsFromSpreadsheet() {
+            events = [];
+            spreadsheetData.forEach((row, index) => {
+                const date = row[0]?.trim();
+                if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                    const description = row[1] || '';
+                    const minas = parseInt(row[2]) || 0;
+                    const receber = parseFloat(row[3]) || 0;
+                    const despesas = parseFloat(row[4]) || 0;
+                    events.push({
+                        id: `event-${index}-${date}`,
+                        date: date,
+                        description: description,
+                        minas: minas,
+                        receber: receber,
+                        despesas: despesas
+                    });
+                }
+            });
+            renderCalendar();
+            renderAgenda();
+        }
+
+        // ============ CALENDÁRIO ============
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+
+            const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            weekDays.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                grid.appendChild(empty);
+            }
+
+            const today = new Date();
+            const todayStr = today.toISOString().slice(0, 10);
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                dayDiv.textContent = day;
+                dayDiv.dataset.date = dateStr;
+
+                if (dateStr === todayStr) dayDiv.classList.add('today');
+                if (events.some(e => e.date === dateStr)) dayDiv.classList.add('has-event');
+                if (dateStr === selectedDate) dayDiv.classList.add('selected');
+
+                dayDiv.addEventListener('click', () => {
+                    selectedDate = dateStr;
+                    renderCalendar();
+                    renderAgenda();
+                });
+
+                grid.appendChild(dayDiv);
+            }
+
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            document.querySelector('.calendar-card h2').textContent = `📆 Calendário - ${monthNames[currentMonth]} ${currentYear}`;
+        }
+
+        // ============ AGENDA ============
+        function renderAgenda() {
+            const agendaList = document.getElementById('agendaList');
+            agendaList.innerHTML = '';
+            const dayEvents = events.filter(e => e.date === selectedDate);
+            if (dayEvents.length === 0) {
+                agendaList.innerHTML = '<p style="color:#999">Nenhum evento neste dia. Adicione na planilha!</p>';
+                return;
+            }
+            dayEvents.forEach(event => {
+                const item = document.createElement('div');
+                item.className = 'agenda-item';
+                item.innerHTML = `
+                    <div class="info">
+                        <div class="date">${formatDate(event.date)}</div>
+                        <div class="description">${event.description || 'Sem descrição'}</div>
+                    </div>
+                    <span class="badge">${event.minas} 👧</span>
+                `;
+                agendaList.appendChild(item);
+            });
+        }
+
+        function formatDate(dateStr) {
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        // ============ TIMELINE (com gráfico de valores) ============
+        function renderTimeline() {
+            const canvas = document.getElementById('timelineCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.parentElement.clientWidth;
+            canvas.width = width;
+            canvas.height = 120;
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const today = new Date();
+            const todayDay = today.getDate();
+            const currentMonthCheck = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+
+            const dailyTotals = {};
+            events.forEach(e => {
+                const day = parseInt(e.date.split('-')[2]);
+                if (!dailyTotals[day]) dailyTotals[day] = { minas: 0, receber: 0 };
+                dailyTotals[day].minas += e.minas;
+                dailyTotals[day].receber += e.receber;
+            });
+
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, width, 120);
+
+            const barAreaHeight = 60;
+            const barAreaTop = 30;
+            const barAreaBottom = barAreaTop + barAreaHeight;
+            const startX = 20;
+            const endX = width - 20;
+            const step = (endX - startX) / (daysInMonth - 1);
+
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(startX, barAreaBottom);
+            ctx.lineTo(endX, barAreaBottom);
+            ctx.stroke();
+
+            const maxVal = Math.max(1, ...Object.values(dailyTotals).map(d => d.minas || 0));
+            Object.keys(dailyTotals).forEach(day => {
+                const x = startX + (parseInt(day) - 1) * step;
+                const barHeight = (dailyTotals[day].minas / maxVal) * (barAreaHeight - 10);
+                const y = barAreaBottom - barHeight;
+                const gradient = ctx.createLinearGradient(x, y, x, barAreaBottom);
+                gradient.addColorStop(0, '#6a11cb');
+                gradient.addColorStop(1, '#2575fc');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x - step/2 + 2, y, step - 4, barHeight);
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(dailyTotals[day].minas.toString(), x, y - 2);
+            });
+
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(startX, barAreaBottom + 10);
+            ctx.lineTo(endX, barAreaBottom + 10);
+            ctx.stroke();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const x = startX + (day - 1) * step;
+                ctx.beginPath();
+                ctx.moveTo(x, barAreaBottom + 5);
+                ctx.lineTo(x, barAreaBottom + 15);
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                if (day % 2 === 0 || day === 1 || day === daysInMonth) {
+                    ctx.fillStyle = '#666';
+                    ctx.font = '9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(day.toString(), x, barAreaBottom + 25);
+                }
+            }
+
+            if (currentMonthCheck) {
+                const x = startX + (todayDay - 1) * step;
+                ctx.beginPath();
+                ctx.arc(x, barAreaBottom + 10, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x, barAreaBottom + 10, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Hoje', x, barAreaBottom + 35);
+            }
+
+            ctx.fillStyle = '#666';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Total de Minas por dia', 20, 15);
+        }
+
+        // ============ RESUMO FINANCEIRO ============
+        function renderSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            if (!events || events.length === 0) {
+                summaryContent.innerHTML = '<p style="color:#999">Sem dados</p>';
+                return;
+            }
+
+            const totalMinas = events.reduce((sum, e) => sum + e.minas, 0);
+            const totalReceber = events.reduce((sum, e) => sum + e.receber, 0);
+            const totalDespesas = events.reduce((sum, e) => sum + e.despesas, 0);
+            const saldo = totalReceber - totalDespesas;
+
+            const sorted = [...events].sort((a, b) => a.date.localeCompare(b.date));
+            const dailyMap = {};
+            sorted.forEach(e => {
+                if (!dailyMap[e.date]) dailyMap[e.date] = { minas: 0, receber: 0 };
+                dailyMap[e.date].minas += e.minas;
+                dailyMap[e.date].receber += e.receber;
+            });
+            const dates = Object.keys(dailyMap).sort();
+            let variationHtml = '';
+            for (let i = 0; i < dates.length; i++) {
+                const dayTotal = dailyMap[dates[i]].receber;
+                if (i > 0) {
+                    const prevTotal = dailyMap[dates[i-1]].receber;
+                    const diff = dayTotal - prevTotal;
+                    const arrow = diff >= 0 ? '▲' : '▼';
+                    const cls = diff >= 0 ? 'variation-up' : 'variation-down';
+                    variationHtml += `<div class="summary-item"><span>${formatDate(dates[i])}</span><span class="${cls}">${arrow} ${diff.toFixed(2)}</span></div>`;
+                } else {
+                    variationHtml += `<div class="summary-item"><span>${formatDate(dates[i])}</span><span>Base</span></div>`;
+                }
+            }
+
+            summaryContent.innerHTML = `
+                <div class="summary-item"><span>Total Minas:</span><span class="value">${totalMinas}</span></div>
+                <div class="summary-item"><span>Total Receber:</span><span class="value">R$ ${totalReceber.toFixed(2)}</span></div>
+                <div class="summary-item"><span>Total Despesas:</span><span class="value">R$ ${totalDespesas.toFixed(2)}</span></div>
+                <div class="summary-item"><span>Saldo:</span><span class="value" style="color:${saldo >= 0 ? 'var(--success)' : 'var(--accent)'}">R$ ${saldo.toFixed(2)}</span></div>
+                <h3 style="margin-top:15px; font-size:1rem;">Variação diária (Receber)</h3>
+                ${variationHtml || '<p style="color:#999">Sem variação</p>'}
+            `;
+        }
+
+        // ============ FUNÇÕES DE PERSISTÊNCIA ============
+        function saveData() {
+            const dataToSave = { events, spreadsheetData };
+            if (firebaseInitialized && database) {
+                database.ref('organizador').set(dataToSave)
+                    .then(() => showToast('Dados salvos no Firebase! ✅'))
+                    .catch(err => {
+                        console.error(err);
+                        localStorage.setItem('organizadorData', JSON.stringify(dataToSave));
+                        showToast('Erro no Firebase, salvos localmente!');
+                    });
+            } else {
+                localStorage.setItem('organizadorData', JSON.stringify(dataToSave));
+                showToast('Dados salvos localmente! 💾');
+            }
+        }
+
+        function loadData() {
+            if (firebaseInitialized && database) {
+                database.ref('organizador').once('value')
+                    .then(snapshot => {
+                        const data = snapshot.val();
+                        if (data) {
+                            events = data.events || [];
+                            spreadsheetData = data.spreadsheetData || spreadsheetData;
+                        }
+                        renderAll();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        loadLocalData();
+                    });
+            } else {
+                loadLocalData();
+            }
+        }
+
+        function loadLocalData() {
+            const saved = localStorage.getItem('organizadorData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                events = data.events || [];
+                spreadsheetData = data.spreadsheetData || spreadsheetData;
+            }
+            renderAll();
+        }
+
+        function renderAll() {
+            renderSpreadsheet();
+            renderCalendar();
+            renderAgenda();
+            renderTimeline();
+            renderSummary();
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #333;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 25px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 1000;
+                animation: fadeIn 0.3s ease;
+                font-weight: 500;
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============ AÇÕES DA PLANILHA ============
+        function addRow() {
+            const cols = spreadsheetData[0].length || 7;
+            const newRow = Array(cols).fill('');
+            if (cols > 5) newRow[5] = `=D${spreadsheetData.length + 1}-E${spreadsheetData.length + 1}`;
+            spreadsheetData.push(newRow);
+            renderSpreadsheet();
+        }
+
+        function addColumn() {
+            spreadsheetData.forEach(row => row.push(''));
+            renderSpreadsheet();
+        }
+
+        function renderHTMLCells() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const raw = cell.dataset.raw;
+                if (raw && raw.trim().startsWith('<') && raw.trim().endsWith('>')) {
+                    cell.innerHTML = raw;
+                    cell.classList.add('rendered');
+                }
+            });
+        }
+
+        function generateChart() {
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = '';
+            if (events.length === 0) {
+                chartContainer.innerHTML = '<span class="chart-placeholder">Sem dados para gerar gráfico</span>';
+                return;
+            }
+
+            const eventCounts = {};
+            events.forEach(event => {
+                const key = event.description || 'Sem nome';
+                eventCounts[key] = (eventCounts[key] || 0) + event.minas;
+            });
+
+            const labels = Object.keys(eventCounts);
+            const values = Object.values(eventCounts);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 300;
+            chartContainer.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            const maxValue = Math.max(...values, 1);
+            const barWidth = 40;
+            const gap = 20;
+            const startX = 50;
+            const startY = 250;
+            const chartHeight = 200;
+
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(40, startY - chartHeight);
+            ctx.lineTo(40, startY);
+            ctx.lineTo(40 + labels.length * (barWidth + gap), startY);
+            ctx.stroke();
+
+            labels.forEach((label, i) => {
+                const x = startX + i * (barWidth + gap);
+                const barHeight = (values[i] / maxValue) * chartHeight;
+                const gradient = ctx.createLinearGradient(x, startY - barHeight, x, startY);
+                gradient.addColorStop(0, '#6a11cb');
+                gradient.addColorStop(1, '#2575fc');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, startY - barHeight, barWidth, barHeight);
+                ctx.fillStyle = '#333';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(label.substring(0, 15), x + barWidth/2, startY + 15);
+                ctx.fillText(values[i].toString(), x + barWidth/2, startY - barHeight - 5);
+            });
+
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Total de Minas por Evento', canvas.width/2, 20);
+        }
+
+        // ============ EVENT LISTENERS ============
+        function setupEventListeners() {
+            document.getElementById('saveBtn').addEventListener('click', saveData);
+            document.getElementById('loadBtn').addEventListener('click', loadData);
+            document.getElementById('addRowBtn').addEventListener('click', addRow);
+            document.getElementById('addColBtn').addEventListener('click', addColumn);
+            document.getElementById('renderBtn').addEventListener('click', renderHTMLCells);
+            document.getElementById('chartBtn').addEventListener('click', generateChart);
+            document.getElementById('recalcBtn').addEventListener('click', () => {
+                renderSpreadsheet();
+                renderTimeline();
+                renderSummary();
+                showToast('Planilha recalculada! 🔄');
+            });
+        }
+
+        // ============ INICIALIZAÇÃO ============
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+            loadData();
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>
