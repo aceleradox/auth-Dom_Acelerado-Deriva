@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProtestFonts - 50 Fontes Anarquistas</title>
+  <!-- React, ReactDOM e Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      color: #eee;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      color: #ff3333;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #aaa;
+    }
+    .input-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      padding: 10px 15px;
+      font-size: 1.2rem;
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 5px;
+      width: 300px;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #ff3333;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      border: 3px solid #333;
+      border-radius: 10px;
+      max-width: 90%;
+      background: #000;
+    }
+    .canvas-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 8px 16px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover {
+      background: #ff3333;
+      border-color: #ff3333;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+    .card:hover {
+      border-color: #ff3333;
+      transform: translateY(-3px);
+    }
+    .card.selected {
+      border-color: #ff3333;
+      box-shadow: 0 0 15px rgba(255,51,51,0.3);
+    }
+    .style-name {
+      font-size: 0.9rem;
+      color: #ff5555;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .preview {
+      font-size: 1.1rem;
+      word-break: break-all;
+      max-height: 100px;
+      overflow-y: auto;
+      background: #111;
+      padding: 5px;
+      border-radius: 4px;
+    }
+    .copy-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 5px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // ========== FUNÇÕES AUXILIARES ==========
+    const alphabetUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const alphabetLower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+
+    function mapChars(str, mapping) {
+      return str.split('').map(ch => mapping[ch] || ch).join('');
+    }
+
+    function applyCombining(str, comb) {
+      return str.split('').map(ch => (ch === ' ' ? ch : ch + comb)).join('');
+    }
+
+    function reverseStr(str) {
+      return str.split('').reverse().join('');
+    }
+
+    // Gera mapeamento com offset contíguo
+    function offsetMapping(startUpper, startLower, startDigit) {
+      const map = {};
+      for (let i = 0; i < 26; i++) {
+        map[alphabetUpper[i]] = String.fromCodePoint(startUpper + i);
+        map[alphabetLower[i]] = String.fromCodePoint(startLower + i);
+      }
+      if (startDigit) {
+        for (let i = 0; i < 10; i++) {
+          map[digits[i]] = String.fromCodePoint(startDigit + i);
+        }
+      }
+      return map;
+    }
+
+    // ========== MAPEAMENTOS UNICODE ==========
+    const mathBold = offsetMapping(0x1D400, 0x1D41A, 0x1D7CE);
+    const mathItalic = offsetMapping(0x1D434, 0x1D44E);
+    const mathBoldItalic = offsetMapping(0x1D468, 0x1D482);
+    const mathScript = offsetMapping(0x1D49C, 0x1D4B6);
+    const mathBoldScript = offsetMapping(0x1D4D0, 0x1D4EA);
+    const mathFraktur = offsetMapping(0x1D504, 0x1D51E);
+    const mathBoldFraktur = offsetMapping(0x1D56C, 0x1D586);
+
+    // Double-struck (com gaps, mapeamento manual)
+    const mathDoubleStruck = {
+      'A':'𝔸','B':'𝔹','C':'ℂ','D':'𝔻','E':'𝔼','F':'𝔽','G':'𝔾','H':'ℍ','I':'𝕀','J':'𝕁',
+      'K':'𝕂','L':'𝕃','M':'𝕄','N':'ℕ','O':'𝕆','P':'ℙ','Q':'ℚ','R':'ℝ','S':'𝕊','T':'𝕋',
+      'U':'𝕌','V':'𝕍','W':'𝕎','X':'𝕏','Y':'𝕐','Z':'ℤ',
+      'a':'𝕒','b':'𝕓','c':'𝕔','d':'𝕕','e':'𝕖','f':'𝕗','g':'𝕘','h':'𝕙','i':'𝕚','j':'𝕛',
+      'k':'𝕜','l':'𝕝','m':'𝕞','n':'𝕟','o':'𝕠','p':'𝕡','q':'𝕢','r':'𝕣','s':'𝕤','t':'𝕥',
+      'u':'𝕦','v':'𝕧','w':'𝕨','x':'𝕩','y':'𝕪','z':'𝕫',
+      '0':'𝟘','1':'𝟙','2':'𝟚','3':'𝟛','4':'𝟜','5':'𝟝','6':'𝟞','7':'𝟟','8':'𝟠','9':'𝟡'
+    };
+
+    const mathSans = offsetMapping(0x1D5A0, 0x1D5BA);
+    const mathSansBold = offsetMapping(0x1D5D4, 0x1D5EE);
+    const mathSansItalic = offsetMapping(0x1D608, 0x1D622);
+    const mathSansBoldItalic = offsetMapping(0x1D63C, 0x1D656);
+    const mathMonospace = offsetMapping(0x1D670, 0x1D68A);
+
+    const circledUpperLower = offsetMapping(0x24B6, 0x24D0); // círculo branco
+    const negativeCircledUpper = offsetMapping(0x1F150, 0x1F150); // círculo preto (usar maiúsculas para minúsculas)
+    const squaredUpper = offsetMapping(0x1F130, 0x1F130);
+    const negativeSquaredUpper = offsetMapping(0x1F170, 0x1F170);
+    const parenthesized = offsetMapping(0x1F110, 0x249C);
+    const fullwidth = offsetMapping(0xFF21, 0xFF41, 0xFF10);
+
+    // Small caps (parcial)
+    const smallCapsMap = {
+      'a':'ᴀ','b':'ʙ','c':'ᴄ','d':'ᴅ','e':'ᴇ','f':'ꜰ','g':'ɢ','h':'ʜ','i':'ɪ','j':'ᴊ',
+      'k':'ᴋ','l':'ʟ','m':'ᴍ','n':'ɴ','o':'ᴏ','p':'ᴘ','q':'q','r':'ʀ','s':'ꜱ','t':'ᴛ',
+      'u':'ᴜ','v':'ᴠ','w':'ᴡ','x':'x','y':'ʏ','z':'ᴢ'
+    };
+
+    // Superscript
+    const superscriptMap = {
+      'a':'ᵃ','b':'ᵇ','c':'ᶜ','d':'ᵈ','e':'ᵉ','f':'ᶠ','g':'ᵍ','h':'ʰ','i':'ⁱ','j':'ʲ',
+      'k':'ᵏ','l':'ˡ','m':'ᵐ','n':'ⁿ','o':'ᵒ','p':'ᵖ','q':'q','r':'ʳ','s':'ˢ','t':'ᵗ',
+      'u':'ᵘ','v':'ᵛ','w':'ʷ','x':'ˣ','y':'ʸ','z':'ᶻ'
+    };
+
+    // Subscript
+    const subscriptMap = {
+      'a':'ₐ','e':'ₑ','h':'ₕ','i':'ᵢ','j':'ⱼ','k':'ₖ','l':'ₗ','m':'ₘ','n':'ₙ','o':'ₒ',
+      'p':'ₚ','r':'ᵣ','s':'ₛ','t':'ₜ','u':'ᵤ','v':'ᵥ','x':'ₓ'
+    };
+
+    // Upside down
+    const upsideDownMap = {
+      'a':'ɐ','b':'q','c':'ɔ','d':'p','e':'ǝ','f':'ɟ','g':'ƃ','h':'ɥ','i':'ᴉ','j':'ɾ',
+      'k':'ʞ','l':'l','m':'ɯ','n':'u','o':'o','p':'d','q':'b','r':'ɹ','s':'s','t':'ʇ',
+      'u':'n','v':'ʌ','w':'ʍ','x':'x','y':'ʎ','z':'z',
+      'A':'∀','B':'𐐒','C':'Ɔ','D':'ᗡ','E':'Ǝ','F':'Ⅎ','G':'⅁','H':'H','I':'I','J':'ſ',
+      'K':'ʞ','L':'˥','M':'W','N':'N','O':'O','P':'Ԁ','Q':'Ό','R':'ᴚ','S':'S','T':'⊥',
+      'U':'∩','V':'Λ','W':'M','X':'X','Y':'⅄','Z':'Z',
+      '0':'0','1':'Ɩ','2':'ᄅ','3':'Ɛ','4':'ㄣ','5':'ϛ','6':'9','7':'ㄥ','8':'8','9':'6',
+      ' ':' ', '.':'˙', ',':'\'', '!':'¡', '?':'¿'
+    };
+
+    // Leetspeak
+    const leetMap = {
+      'a':'4','A':'4','e':'3','E':'3','i':'1','I':'1','o':'0','O':'0','s':'5','S':'5',
+      't':'7','T':'7','b':'8','B':'8','g':'9','G':'6','z':'2','Z':'2'
+    };
+
+    // Morse code
+    const morseMap = {
+      'a':'.-', 'b':'-...', 'c':'-.-.', 'd':'-..', 'e':'.', 'f':'..-.', 'g':'--.', 'h':'....',
+      'i':'..', 'j':'.---', 'k':'-.-', 'l':'.-..', 'm':'--', 'n':'-.', 'o':'---', 'p':'.--.',
+      'q':'--.-', 'r':'.-.', 's':'...', 't':'-', 'u':'..-', 'v':'...-', 'w':'.--', 'x':'-..-',
+      'y':'-.--', 'z':'--..', '0':'-----', '1':'.----', '2':'..---', '3':'...--', '4':'....-',
+      '5':'.....', '6':'-....', '7':'--...', '8':'---..', '9':'----.', ' ':'/'
+    };
+
+    // Braille
+    const brailleMap = {
+      'a':'⠁','b':'⠃','c':'⠉','d':'⠙','e':'⠑','f':'⠋','g':'⠛','h':'⠓','i':'⠊','j':'⠚',
+      'k':'⠅','l':'⠇','m':'⠍','n':'⠝','o':'⠕','p':'⠏','q':'⠟','r':'⠗','s':'⠎','t':'⠞',
+      'u':'⠥','v':'⠧','w':'⠺','x':'⠭','y':'⠽','z':'⠵', ' ':' '
+    };
+
+    // Rúnico (Elder Futhark aproximado)
+    const runicMap = {
+      'a':'ᚨ','b':'ᛒ','c':'ᚲ','d':'ᛞ','e':'ᛖ','f':'ᚠ','g':'ᚷ','h':'ᚺ','i':'ᛁ','j':'ᛃ',
+      'k':'ᚲ','l':'ᛚ','m':'ᛗ','n':'ᚾ','o':'ᛟ','p':'ᛈ','q':'ᚲ','r':'ᚱ','s':'ᛊ','t':'ᛏ',
+      'u':'ᚢ','v':'ᚹ','w':'ᚹ','x':'ᛋ','y':'ᛃ','z':'ᛉ',
+      'A':'ᚨ','B':'ᛒ','C':'ᚲ','D':'ᛞ','E':'ᛖ','F':'ᚠ','G':'ᚷ','H':'ᚺ','I':'ᛁ','J':'ᛃ',
+      'K':'ᚲ','L':'ᛚ','M':'ᛗ','N':'ᚾ','O':'ᛟ','P':'ᛈ','Q':'ᚲ','R':'ᚱ','S':'ᛊ','T':'ᛏ',
+      'U':'ᚢ','V':'ᚹ','W':'ᚹ','X':'ᛋ','Y':'ᛃ','Z':'ᛉ'
+    };
+
+    // Grego
+    const greekMap = {
+      'A':'Α','B':'Β','E':'Ε','Z':'Ζ','H':'Η','I':'Ι','K':'Κ','M':'Μ','N':'Ν','O':'Ο','P':'Ρ',
+      'T':'Τ','Y':'Υ','X':'Χ',
+      'a':'α','b':'β','c':'ς','d':'δ','e':'ε','f':'φ','g':'γ','h':'η','i':'ι','j':'ξ','k':'κ',
+      'l':'λ','m':'μ','n':'ν','o':'ο','p':'π','q':'θ','r':'ρ','s':'σ','t':'τ','u':'υ','v':'ω',
+      'w':'ω','x':'χ','y':'ψ','z':'ζ'
+    };
+
+    // Cirílico
+    const cyrillicMap = {
+      'A':'А','B':'В','C':'С','E':'Е','H':'Н','K':'К','M':'М','O':'О','P':'Р','T':'Т','X':'Х',
+      'Y':'У',
+      'a':'а','b':'в','c':'с','e':'е','h':'н','k':'к','m':'м','o':'о','p':'р','t':'т','x':'х',
+      'y':'у'
+    };
+
+    // Zalgo (determinístico)
+    function zalgo(str) {
+      const marks = [
+        '\u0300','\u0301','\u0302','\u0303','\u0304','\u0305','\u0306','\u0307','\u0308','\u0309',
+        '\u030A','\u030B','\u030C','\u030D','\u030E','\u030F','\u0310','\u0311','\u0312','\u0313',
+        '\u0314','\u0315','\u0316','\u0317','\u0318','\u0319','\u031A','\u031B','\u031C','\u031D',
+        '\u031E','\u031F','\u0320','\u0321','\u0322','\u0323','\u0324','\u0325','\u0326','\u0327',
+        '\u0328','\u0329','\u032A','\u032B','\u032C','\u032D','\u032E','\u032F','\u0330','\u0331',
+        '\u0332','\u0333','\u0334','\u0335','\u0336','\u0337','\u0338','\u0339','\u033A','\u033B',
+        '\u033C','\u033D','\u033E','\u033F'
+      ];
+      return str.split('').map((ch, idx) => {
+        if (ch === ' ') return ch;
+        let result = ch;
+        const count = 2 + (idx % 3); // 2 a 4 marcas
+        for (let i = 0; i < count; i++) {
+          result += marks[(idx * 7 + i * 13) % marks.length];
+        }
+        return result;
+      }).join('');
+    }
+
+    // Morse
+    function toMorse(str) {
+      return str.toLowerCase().split('').map(ch => morseMap[ch] || ch).join(' ');
+    }
+
+    // Binário
+    function toBinary(str) {
+      return str.split('').map(ch => {
+        const code = ch.charCodeAt(0);
+        return code.toString(2).padStart(8, '0');
+      }).join(' ');
+    }
+
+    // Vaporwave (fullwidth com espaços)
+    function vaporwave(str) {
+      return str.split('').map(ch => fullwidth[ch] || ch).join(' ');
+    }
+
+    // Upside down (map + reverse)
+    function upsideDown(str) {
+      return reverseStr(mapChars(str, upsideDownMap));
+    }
+
+    // ========== LISTA DE 50 ESTILOS ==========
+    const styles = [
+      { name: 'Anarquista Blackletter', transform: (s) => mapChars(s, mathFraktur) },
+      { name: 'Radical Script', transform: (s) => mapChars(s, mathScript) },
+      { name: 'Libertário Sans Bold', transform: (s) => mapChars(s, mathSansBold) },
+      { name: 'Antimoralista Double-Struck', transform: (s) => mapChars(s, mathDoubleStruck) },
+      { name: 'Protesto Monospace', transform: (s) => mapChars(s, mathMonospace) },
+      { name: 'Individualista Itálico', transform: (s) => mapChars(s, mathItalic) },
+      { name: 'Niilista Bold', transform: (s) => mapChars(s, mathBold) },
+      { name: 'Punk Círculos', transform: (s) => mapChars(s, circledUpperLower) },
+      { name: 'Rebelde Quadrados', transform: (s) => mapChars(s, squaredUpper) },
+      { name: 'Desafiante Parênteses', transform: (s) => mapChars(s, parenthesized) },
+      { name: 'Subversivo Negativo', transform: (s) => mapChars(s, negativeCircledUpper) },
+      { name: 'Extremista Fullwidth', transform: (s) => mapChars(s, fullwidth) },
+      { name: 'Autônomo Small Caps', transform: (s) => mapChars(s, smallCapsMap) },
+      { name: 'Insurgente Sobrescrito', transform: (s) => mapChars(s, superscriptMap) },
+      { name: 'Underground Subscrito', transform: (s) => mapChars(s, subscriptMap) },
+      { name: 'Anarco-UpsideDown', transform: (s) => upsideDown(s) },
+      { name: 'Caos Reverso', transform: (s) => reverseStr(s) },
+      { name: 'Riot Riscado', transform: (s) => applyCombining(s, '\u0336') },
+      { name: 'Molotov Sublinhado', transform: (s) => applyCombining(s, '\u0332') },
+      { name: 'Guerrilha Overline', transform: (s) => applyCombining(s, '\u0305') },
+      { name: 'Antifa Duplo Sublinhado', transform: (s) => applyCombining(s, '\u0333') },
+      { name: 'Zalgo Anárquico', transform: (s) => zalgo(s) },
+      { name: 'Leet Rebelião', transform: (s) => mapChars(s, leetMap) },
+      { name: 'Código Morse', transform: (s) => toMorse(s) },
+      { name: 'Binário Protesto', transform: (s) => toBinary(s) },
+      { name: 'Vaporwave Revolta', transform: (s) => vaporwave(s) },
+      { name: 'Black Block Negativo', transform: (s) => mapChars(s, negativeSquaredUpper) },
+      { name: 'Squat Quadrado Negativo', transform: (s) => mapChars(s, negativeSquaredUpper) },
+      { name: 'Autonomia Círculo Branco', transform: (s) => mapChars(s, circledUpperLower) },
+      { name: 'Ação Direta Script Bold', transform: (s) => mapChars(s, mathBoldScript) },
+      { name: 'Egoísta Sans', transform: (s) => mapChars(s, mathSans) },
+      { name: 'Stirner Itálico', transform: (s) => mapChars(s, mathSansItalic) },
+      { name: 'Anomia Bold Itálico', transform: (s) => mapChars(s, mathBoldItalic) },
+      { name: 'Insurreição Sans Bold Itálico', transform: (s) => mapChars(s, mathSansBoldItalic) },
+      { name: 'Bakunin Gothic', transform: (s) => mapChars(s, mathFraktur) },
+      { name: 'Kropotkin Monospace', transform: (s) => mapChars(s, mathMonospace) },
+      { name: 'Proudhon Script', transform: (s) => mapChars(s, mathScript) },
+      { name: 'Malatesta Double-Struck', transform: (s) => mapChars(s, mathDoubleStruck) },
+      { name: 'Goldman Círculos Negros', transform: (s) => mapChars(s, negativeCircledUpper) },
+      { name: 'Bonanno Quadrados', transform: (s) => mapChars(s, squaredUpper) },
+      { name: 'Black Flag Fullwidth', transform: (s) => mapChars(s, fullwidth) },
+      { name: 'Anarco-Sindicalista Small Caps + Sublinhado', transform: (s) => applyCombining(mapChars(s, smallCapsMap), '\u0332') },
+      { name: 'Ilegalista Reverso + Riscado', transform: (s) => applyCombining(reverseStr(s), '\u0336') },
+      { name: 'Antimoralista Upside Down + Sublinhado', transform: (s) => applyCombining(upsideDown(s), '\u0332') },
+      { name: 'Radical Rúnico', transform: (s) => mapChars(s, runicMap) },
+      { name: 'Extremista Braille', transform: (s) => mapChars(s, brailleMap) },
+      { name: 'Individualista Fonético Grego', transform: (s) => mapChars(s, greekMap) },
+      { name: 'Libertário Cirílico', transform: (s) => mapChars(s, cyrillicMap) },
+      { name: 'Niilista Duplo Sublinhado + Riscado', transform: (s) => applyCombining(applyCombining(s, '\u0333'), '\u0336') },
+      { name: 'Anarquia Fullwidth + Overline', transform: (s) => applyCombining(mapChars(s, fullwidth), '\u0305') }
+    ];
+
+    // ========== COMPONENTE REACT ==========
+    function App() {
+      const [input, setInput] = useState('Protesto');
+      const [selected, setSelected] = useState(0);
+      const canvasRef = React.useRef(null);
+
+      const transformedList = useMemo(() => {
+        return styles.map(style => ({
+          ...style,
+          output: style.transform(input)
+        }));
+      }, [input]);
+
+      const selectedOutput = transformedList[selected]?.output || '';
+
+      // Desenha no canvas
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 300;
+
+        // Fundo preto
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Linhas diagonais vermelhas (estética punk)
+        ctx.strokeStyle = 'rgba(255,0,0,0.3)';
+        ctx.lineWidth = 2;
+        for (let i = -canvas.height; i < canvas.width; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i + canvas.height, canvas.height);
+          ctx.stroke();
+        }
+
+        // Texto
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 60px "Arial Black", "Impact", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#f00';
+        ctx.shadowBlur = 15;
+        ctx.fillText(selectedOutput, canvas.width / 2, canvas.height / 2);
+        ctx.shadowBlur = 0;
+      }, [selectedOutput]);
+
+      const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Copiado!');
+        });
+      };
+
+      const downloadCanvas = () => {
+        const canvas = canvasRef.current;
+        const link = document.createElement('a');
+        link.download = 'protestfonts.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+
+      return (
+        <div>
+          <h1>⚑ ProtestFonts ⚑</h1>
+          <p className="subtitle">50 fontes anarquistas / individualistas radicais / antimoralistas</p>
+
+          <div className="input-area">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Digite seu texto..."
+            />
+          </div>
+
+          <canvas ref={canvasRef} />
+          <div className="canvas-buttons">
+            <button onClick={downloadCanvas}>Baixar imagem do cartaz</button>
+          </div>
+
+          <div className="grid">
+            {transformedList.map((style, idx) => (
+              <div
+                key={idx}
+                className={`card ${idx === selected ? 'selected' : ''}`}
+                onClick={() => setSelected(idx)}
+              >
+                <div className="style-name">{style.name}</div>
+                <div className="preview">{style.output}</div>
+                <button
+                  className="copy-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(style.output);
+                  }}
+                >
+                  Copiar
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ marginTop: '30px', textAlign: 'center', color: '#666' }}>
+            Use com responsabilidade. Expressão criativa não é discurso de ódio.
+          </p>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
