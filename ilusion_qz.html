@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste: Você está sendo iludido?</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: #16213e;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 650px;
+      width: 100%;
+      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    h1 { color: #e94560; margin-bottom: 10px; }
+    h2 { color: #f5a623; }
+    #progressBar {
+      background: #0f3460;
+      height: 22px;
+      border-radius: 15px;
+      margin: 20px 0 10px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    #progressFill {
+      background: linear-gradient(90deg, #e94560, #f5a623);
+      height: 100%;
+      width: 0%;
+      transition: width 0.4s ease;
+      border-radius: 15px;
+    }
+    .question-number {
+      color: #f5a623;
+      font-weight: bold;
+      font-size: 1em;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .question {
+      font-size: 1.3em;
+      margin: 20px 0;
+      line-height: 1.6;
+      color: #fff;
+    }
+    .buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 1.1em;
+      font-weight: bold;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.3); }
+    .btn:active { transform: scale(0.96); }
+    .btn-sim { background: #e94560; color: white; }
+    .btn-nao { background: #0f3460; color: white; border: 2px solid #1a5276; }
+    .btn-talvez { background: #f5a623; color: #1a1a2e; }
+    .btn-prosseguir {
+      background: #e94560;
+      color: white;
+      padding: 16px 36px;
+      font-size: 1.2em;
+      margin-top: 20px;
+      letter-spacing: 1px;
+    }
+    .pause-box {
+      background: #0f3460;
+      padding: 25px;
+      border-radius: 15px;
+      margin: 20px 0;
+      border-left: 5px solid #f5a623;
+      text-align: left;
+      line-height: 1.7;
+      font-size: 1.1em;
+    }
+    .hidden { display: none !important; }
+    #resultArea { padding: 20px; }
+    #resultText { font-size: 1.2em; margin: 20px 0; line-height: 1.5; }
+    .score-text {
+      font-weight: bold;
+      color: #f5a623;
+      background: #0f3460;
+      padding: 12px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .intro-text { margin: 20px 0; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🕵️ Teste: Você está sendo iludido?</h1>
+
+    <!-- Intro -->
+    <div id="intro">
+      <p class="intro-text">
+        Responda as <strong>50 perguntas</strong> e descubra se essa menina está sendo sincera com você<br>
+        ou se está apenas te usando e iludindo.
+      </p>
+      <button class="btn btn-prosseguir" onclick="startQuiz()">Começar Quiz</button>
+    </div>
+
+    <!-- Quiz Area -->
+    <div id="quizArea" class="hidden">
+      <div id="progressBar">
+        <div id="progressFill"></div>
+      </div>
+      <div id="questionNumber" class="question-number"></div>
+      <div id="questionText" class="question"></div>
+      <div id="questionButtons" class="buttons">
+        <button class="btn btn-sim" onclick="answer(1)">Sim</button>
+        <button class="btn btn-nao" onclick="answer(0)">Não</button>
+        <button class="btn btn-talvez" onclick="answer(0.5)">Talvez</button>
+      </div>
+      <div id="pauseArea" class="hidden">
+        <div id="pauseText" class="pause-box"></div>
+        <button class="btn btn-prosseguir" onclick="proceed()">Prossiga ➡️</button>
+      </div>
+    </div>
+
+    <!-- Result Area -->
+    <div id="resultArea" class="hidden">
+      <h2>📊 Resultado</h2>
+      <p id="resultText"></p>
+      <p id="scoreText" class="score-text"></p>
+      <button class="btn btn-prosseguir" onclick="restart()">🔄 Reiniciar Quiz</button>
+    </div>
+  </div>
+
+  <script>
+    const steps = [
+      { type: 'question', text: 'Ela te chama de bonito, diz que você é simpático e vive te dando conselhos de beleza?' },
+      { type: 'question', text: 'Quando ela vira as costas, você percebe alguma expressão estranha, tipo deboche ou alívio?' },
+      { type: 'question', text: 'Ela te pede dinheiro toda hora?' },
+      { type: 'question', text: 'Toda vez que chega na sua casa ela fala: "compra algo pra mim", "você tem dinheiro?" ou "recebeu?"' },
+      { type: 'question', text: 'Ela fica te desmentindo quando você fala que não recebeu dinheiro?' },
+      { type: 'question', text: 'Ela sente ciúmes quando você está conversando com outra garota?' },
+      { type: 'question', text: 'Ela ocultou os stories de você nas redes sociais?' },
+      { type: 'question', text: 'Talvez ela tenha ocultado stories só de você e não de outros?' },
+
+      { type: 'pause', text: '🕵️ PARE E ANALISE O CASO: Agora, antes de continuar, faça o seguinte: Acesse o perfil dela no modo anônimo (ou peça para um amigo de confiança acessar). Observe os stories e os destaques. Depois volte aqui e clique no botão PROSSEGUIR.' },
+
+      { type: 'question', text: 'Os destaques dela apareceram para você no modo anônimo?' },
+      { type: 'question', text: 'Ela te pede Pix em mensagens?' },
+      { type: 'question', text: 'O endereço do Pix que ela te passa é de homens? E são vários endereços diferentes?' },
+      { type: 'question', text: 'Ela pode estar pedindo Pix para outros caras e você está incluído junto? (Bora fazer o teste?)' },
+      { type: 'question', text: 'No contato dela, ela manda mensagem toda hora pedindo Pix?' },
+      { type: 'question', text: 'Ela já te bloqueou e disse que ia desbloquear depois?' },
+      { type: 'question', text: 'Ela some por dias e volta como se nada tivesse acontecido?' },
+      { type: 'question', text: 'Ela só te procura quando precisa de algo?' },
+      { type: 'question', text: 'Ela nunca apresenta você para os amigos ou família?' },
+      { type: 'question', text: 'Ela esconde o celular quando você está perto?' },
+      { type: 'question', text: 'Ela fica nervosa se você pega o celular dela?' },
+      { type: 'question', text: 'Ela tem outro perfil no Instagram que você não sabe?' },
+      { type: 'question', text: 'Ela nunca posta foto com você?' },
+      { type: 'question', text: 'Ela diz que está solteira nas redes sociais, mas vocês estão juntos?' },
+      { type: 'question', text: 'Ela te chama de "amigo" na frente de outras pessoas?' },
+      { type: 'question', text: 'Ela só marca encontro quando você paga?' },
+      { type: 'question', text: 'Ela nunca quer dividir a conta?' },
+      { type: 'question', text: 'Ela pede dinheiro emprestado e nunca devolve?' },
+      { type: 'question', text: 'Ela faz chantagem emocional se você nega algo?' },
+      { type: 'question', text: 'Ela diz que você é ciumento quando você questiona o comportamento dela?' },
+      { type: 'question', text: 'Ela te faz sentir culpado por desconfiar?' },
+      { type: 'question', text: 'Ela usa elogios para conseguir o que quer?' },
+      { type: 'question', text: 'Ela promete algo e depois não cumpre?' },
+      { type: 'question', text: 'Ela te ignora na frente de outras pessoas?' },
+      { type: 'question', text: 'Ela só responde mensagem quando quer?' },
+      { type: 'question', text: 'Ela nunca manda mensagem primeiro?' },
+      { type: 'question', text: 'Ela já pediu para você não comentar nas fotos dela?' },
+      { type: 'question', text: 'Ela já apagou comentários seus?' },
+      { type: 'question', text: 'Ela restringe você de ver os stories dela, mas no anônimo você viu?' },
+      { type: 'question', text: 'Ela tem listas de melhores amigos no Instagram e você não está nelas?' },
+      { type: 'question', text: 'Ela já deu desculpa esfarrapada para não te encontrar?' },
+      { type: 'question', text: 'Ela só aparece quando está sem dinheiro?' },
+      { type: 'question', text: 'Ela pede presentes caros?' },
+      { type: 'question', text: 'Ela diz que o ex dava mais presentes?' },
+      { type: 'question', text: 'Ela compara você com outros caras?' },
+      { type: 'question', text: 'Ela te humilha em público?' },
+      { type: 'question', text: 'Ela faz piadas sobre você ser trouxa?' },
+      { type: 'question', text: 'Ela já te chamou de "gadão" ou "trouxa"?' },
+      { type: 'question', text: 'Ela pede dinheiro para "emergências" que nunca são comprovadas?' },
+      { type: 'question', text: 'Ela te pede para pagar contas dela (internet, aluguel, etc.)?' },
+      { type: 'question', text: 'Ela te usa como motorista particular?' },
+      { type: 'question', text: 'Ela já confessou que sai com outros caras e pede dinheiro a eles também?' }
+    ];
+
+    const totalQuestions = steps.filter(s => s.type === 'question').length;
+    let currentStep = 0;
+    let answered = 0;
+    let score = 0;
+
+    function startQuiz() {
+      document.getElementById('intro').classList.add('hidden');
+      document.getElementById('quizArea').classList.remove('hidden');
+      document.getElementById('resultArea').classList.add('hidden');
+      currentStep = 0;
+      answered = 0;
+      score = 0;
+      renderStep();
+    }
+
+    function renderStep() {
+      if (currentStep >= steps.length) {
+        showResult();
+        return;
+      }
+
+      const step = steps[currentStep];
+      const questionText = document.getElementById('questionText');
+      const questionButtons = document.getElementById('questionButtons');
+      const pauseArea = document.getElementById('pauseArea');
+      const pauseText = document.getElementById('pauseText');
+      const questionNumber = document.getElementById('questionNumber');
+
+      if (step.type === 'pause') {
+        questionText.classList.add('hidden');
+        questionButtons.classList.add('hidden');
+        pauseArea.classList.remove('hidden');
+        pauseText.textContent = step.text;
+        questionNumber.textContent = '';
+      } else {
+        pauseArea.classList.add('hidden');
+        questionText.classList.remove('hidden');
+        questionButtons.classList.remove('hidden');
+        questionText.textContent = step.text;
+        questionNumber.textContent = 'Pergunta ' + (answered + 1) + ' de ' + totalQuestions;
+      }
+
+      document.getElementById('progressFill').style.width = (answered / totalQuestions) * 100 + '%';
+    }
+
+    function answer(value) {
+      score += value;
+      answered++;
+      currentStep++;
+      renderStep();
+    }
+
+    function proceed() {
+      currentStep++;
+      renderStep();
+    }
+
+    function showResult() {
+      document.getElementById('quizArea').classList.add('hidden');
+      const resultArea = document.getElementById('resultArea');
+      resultArea.classList.remove('hidden');
+
+      const resultText = document.getElementById('resultText');
+      const scoreText = document.getElementById('scoreText');
+
+      let message = '';
+      if (score <= 15) {
+        message = '✅ Alerta baixo: Talvez você não esteja sendo iludido, ou precisa observar mais.';
+      } else if (score <= 30) {
+        message = '⚠️ Alerta moderado: Existem sinais de manipulação. Fique esperto!';
+      } else {
+        message = '🚨 ALERTA MÁXIMO: Você está sendo ILUDIDO! Essa pessoa provavelmente só quer te usar. Caia fora!';
+      }
+
+      resultText.textContent = message;
+      scoreText.textContent = 'Sua pontuação: ' + score + ' de ' + totalQuestions + ' (cada "Sim" vale 1, "Talvez" vale 0,5)';
+    }
+
+    function restart() {
+      document.getElementById('resultArea').classList.add('hidden');
+      document.getElementById('intro').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
