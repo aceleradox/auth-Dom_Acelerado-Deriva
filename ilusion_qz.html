@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teste: Você está sendo iludido?</title>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <style>
     * { box-sizing: border-box; }
     body {
@@ -25,6 +30,7 @@
       width: 100%;
       box-shadow: 0 0 30px rgba(0,0,0,0.6);
       text-align: center;
+      position: relative;
     }
     h1 { color: #e94560; margin-bottom: 10px; }
     h2 { color: #f5a623; }
@@ -108,49 +114,265 @@
       margin: 20px 0;
     }
     .intro-text { margin: 20px 0; line-height: 1.6; }
+
+    /* Tela de desbloqueio */
+    #lockScreen {
+      position: relative;
+    }
+    #lockScreen input {
+      width: 100%;
+      padding: 14px;
+      margin: 15px 0;
+      border: 2px solid #0f3460;
+      border-radius: 10px;
+      background: #1a1a2e;
+      color: white;
+      font-size: 1.2em;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    #lockScreen .btn-unlock {
+      background: #e94560;
+      color: white;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2em;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #verifying {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #f5a623;
+    }
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #e94560;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 15px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error-msg {
+      color: #e94560;
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🕵️ Teste: Você está sendo iludido?</h1>
-
-    <!-- Intro -->
-    <div id="intro">
-      <p class="intro-text">
-        Responda as <strong>50 perguntas</strong> e descubra se essa menina está sendo sincera com você<br>
-        ou se está apenas te usando e iludindo.
-      </p>
-      <button class="btn btn-prosseguir" onclick="startQuiz()">Começar Quiz</button>
+    <!-- Tela de bloqueio -->
+    <div id="lockScreen">
+      <h1>🔒 Acesso Restrito</h1>
+      <p>Para liberar o quiz, siga <a href="https://www.tiktok.com/@vulgo_acelerado_ofc" target="_blank" style="color:#f5a623;">@vulgo_acelerado_ofc</a> no TikTok e use o código da bio.</p>
+      <input type="text" id="codeInput" placeholder="Digite o NTC Code" maxlength="20">
+      <button class="btn-unlock" onclick="verifyCode()">Liberar Acesso</button>
+      <div id="verifying" class="hidden">
+        <div class="spinner"></div>
+        <p>Verificando se você está seguindo vulgo acelerado ofc...</p>
+      </div>
+      <p id="errorMsg" class="error-msg"></p>
     </div>
 
-    <!-- Quiz Area -->
-    <div id="quizArea" class="hidden">
-      <div id="progressBar">
-        <div id="progressFill"></div>
-      </div>
-      <div id="questionNumber" class="question-number"></div>
-      <div id="questionText" class="question"></div>
-      <div id="questionButtons" class="buttons">
-        <button class="btn btn-sim" onclick="answer(1)">Sim</button>
-        <button class="btn btn-nao" onclick="answer(0)">Não</button>
-        <button class="btn btn-talvez" onclick="answer(0.5)">Talvez</button>
-      </div>
-      <div id="pauseArea" class="hidden">
-        <div id="pauseText" class="pause-box"></div>
-        <button class="btn btn-prosseguir" onclick="proceed()">Prossiga ➡️</button>
-      </div>
-    </div>
+    <!-- Conteúdo principal (quiz) -->
+    <div id="appContent" class="hidden">
+      <h1>🕵️ Teste: Você está sendo iludido?</h1>
 
-    <!-- Result Area -->
-    <div id="resultArea" class="hidden">
-      <h2>📊 Resultado</h2>
-      <p id="resultText"></p>
-      <p id="scoreText" class="score-text"></p>
-      <button class="btn btn-prosseguir" onclick="restart()">🔄 Reiniciar Quiz</button>
+      <!-- Intro -->
+      <div id="intro">
+        <p class="intro-text">
+          Responda as <strong>50 perguntas</strong> e descubra se essa menina está sendo sincera com você<br>
+          ou se está apenas te usando e iludindo.
+        </p>
+        <button class="btn btn-prosseguir" onclick="startQuiz()">Começar Quiz</button>
+      </div>
+
+      <!-- Quiz Area -->
+      <div id="quizArea" class="hidden">
+        <div id="progressBar">
+          <div id="progressFill"></div>
+        </div>
+        <div id="questionNumber" class="question-number"></div>
+        <div id="questionText" class="question"></div>
+        <div id="questionButtons" class="buttons">
+          <button class="btn btn-sim" onclick="answer(1)">Sim</button>
+          <button class="btn btn-nao" onclick="answer(0)">Não</button>
+          <button class="btn btn-talvez" onclick="answer(0.5)">Talvez</button>
+        </div>
+        <div id="pauseArea" class="hidden">
+          <div id="pauseText" class="pause-box"></div>
+          <button class="btn btn-prosseguir" onclick="proceed()">Prossiga ➡️</button>
+        </div>
+      </div>
+
+      <!-- Result Area -->
+      <div id="resultArea" class="hidden">
+        <h2>📊 Resultado</h2>
+        <p id="resultText"></p>
+        <p id="scoreText" class="score-text"></p>
+        <button class="btn btn-prosseguir" onclick="restart()">🔄 Reiniciar Quiz</button>
+      </div>
     </div>
   </div>
 
   <script>
+    // ==================== CONFIGURAÇÃO DO FIREBASE ====================
+    // ⚠️ SUBSTITUA com os dados do seu projeto Firebase
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_DOMINIO.firebaseapp.com",
+      databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+      projectId: "SEU_PROJETO",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+    // ==================================================================
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // Código de desbloqueio
+    const UNLOCK_CODE = "ACE15SAE";
+    const DAILY_COINS = 100;
+    const LOCK_DURATION = 12000; // 12 segundos
+
+    let currentUser = null;
+    let userDbRef = null;
+
+    // Elementos
+    const lockScreen = document.getElementById('lockScreen');
+    const appContent = document.getElementById('appContent');
+    const codeInput = document.getElementById('codeInput');
+    const verifyingDiv = document.getElementById('verifying');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // ==================== AUTENTICAÇÃO ANÔNIMA ====================
+    auth.signInAnonymously()
+      .then((userCredential) => {
+        currentUser = userCredential.user;
+        userDbRef = database.ref('users/' + currentUser.uid);
+        checkUnlockStatus();
+      })
+      .catch((error) => {
+        console.error("Erro na autenticação:", error);
+        // Fallback: usar localStorage se Firebase falhar
+        if (localStorage.getItem('unlocked') === 'true') {
+          showApp();
+        } else {
+          lockScreen.classList.remove('hidden');
+          appContent.classList.add('hidden');
+        }
+      });
+
+    function checkUnlockStatus() {
+      if (!userDbRef) return;
+      userDbRef.once('value').then((snapshot) => {
+        const data = snapshot.val() || {};
+        if (data.unlocked === true) {
+          // Já foi liberado anteriormente
+          showApp();
+        } else {
+          // Verificar backup localStorage
+          if (localStorage.getItem('unlocked') === 'true') {
+            // Sincronizar com Firebase
+            userDbRef.update({ unlocked: true });
+            showApp();
+          } else {
+            lockScreen.classList.remove('hidden');
+            appContent.classList.add('hidden');
+          }
+        }
+      }).catch((error) => {
+        console.error("Erro ao ler Firebase:", error);
+        if (localStorage.getItem('unlocked') === 'true') {
+          showApp();
+        } else {
+          lockScreen.classList.remove('hidden');
+          appContent.classList.add('hidden');
+        }
+      });
+    }
+
+    function verifyCode() {
+      const code = codeInput.value.trim().toUpperCase();
+      errorMsg.textContent = '';
+
+      if (code === UNLOCK_CODE) {
+        // Mostrar mensagem de verificação
+        lockScreen.querySelector('.btn-unlock').classList.add('hidden');
+        codeInput.disabled = true;
+        verifyingDiv.classList.remove('hidden');
+
+        // Simular verificação por 12 segundos
+        setTimeout(() => {
+          // Liberar acesso
+          unlockApp();
+        }, LOCK_DURATION);
+      } else {
+        errorMsg.textContent = 'Código inválido. Verifique a bio do TikTok.';
+      }
+    }
+
+    function unlockApp() {
+      // Salvar no Firebase
+      if (userDbRef) {
+        userDbRef.update({ unlocked: true })
+          .then(() => {
+            console.log("Status salvo no Firebase");
+            grantDailyCoins();
+          })
+          .catch((error) => {
+            console.error("Erro ao salvar Firebase:", error);
+          });
+      }
+      // Salvar no localStorage como backup
+      localStorage.setItem('unlocked', 'true');
+      showApp();
+    }
+
+    function showApp() {
+      lockScreen.classList.add('hidden');
+      appContent.classList.remove('hidden');
+      // Verificar recompensa diária (pode ser chamado também no login)
+      if (userDbRef) {
+        grantDailyCoins();
+      }
+    }
+
+    // ==================== SISTEMA DE NTC COINS ====================
+    function grantDailyCoins() {
+      if (!userDbRef) return;
+      const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+      userDbRef.once('value').then((snapshot) => {
+        const data = snapshot.val() || {};
+        const lastClaim = data.lastCoinClaim;
+        if (lastClaim !== todayStr) {
+          const currentCoins = data.ntcCoins || 0;
+          const newCoins = currentCoins + DAILY_COINS;
+          userDbRef.update({
+            ntcCoins: newCoins,
+            lastCoinClaim: todayStr
+          }).then(() => {
+            console.log(`🎉 +${DAILY_COINS} NTC concedidos! Saldo: ${newCoins}`);
+          });
+        } else {
+          console.log("Recompensa diária já coletada hoje.");
+        }
+      });
+    }
+
+    // ==================== QUIZ (inalterado) ====================
     const steps = [
       { type: 'question', text: 'Ela te chama de bonito, diz que você é simpático e vive te dando conselhos de beleza?' },
       { type: 'question', text: 'Quando ela vira as costas, você percebe alguma expressão estranha, tipo deboche ou alívio?' },
@@ -160,9 +382,7 @@
       { type: 'question', text: 'Ela sente ciúmes quando você está conversando com outra garota?' },
       { type: 'question', text: 'Ela ocultou os stories de você nas redes sociais?' },
       { type: 'question', text: 'Talvez ela tenha ocultado stories só de você e não de outros?' },
-
       { type: 'pause', text: '🕵️ PARE E ANALISE O CASO: Agora, antes de continuar, faça o seguinte: Acesse o perfil dela no modo anônimo (ou peça para um amigo de confiança acessar). Observe os stories e os destaques. Depois volte aqui e clique no botão PROSSEGUIR.' },
-
       { type: 'question', text: 'Os destaques dela apareceram para você no modo anônimo?' },
       { type: 'question', text: 'Ela te pede Pix em mensagens?' },
       { type: 'question', text: 'O endereço do Pix que ela te passa é de homens? E são vários endereços diferentes?' },
