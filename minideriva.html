@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Deriva System Pro</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --bg: #ecf0f1;
+            --card: #ffffff;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --radius: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .tab {
+            display: flex;
+            flex-wrap: wrap;
+            background: #34495e;
+            padding: 10px;
+            gap: 5px;
+        }
+
+        .tab button {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .tab button:hover { background: #465e7a; }
+        .tab button.active { background: var(--secondary); color: white; }
+
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            background: var(--card);
+            animation: fadeIn 0.3s;
+        }
+
+        .tabcontent.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-download { background: #27ae60; color: white; }
+        .btn-download:hover { background: #219a52; }
+        .btn-layout { background: #f39c12; color: white; }
+        .btn-layout:hover { background: #e67e22; }
+        .btn-edit { background: #3498db; color: white; padding: 4px 8px; font-size: 0.8rem; }
+        .btn-edit:hover { background: #2980b9; }
+        .btn-delete { background: #e74c3c; color: white; padding: 4px 8px; font-size: 0.8rem; }
+        .btn-delete:hover { background: #c0392b; }
+
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f2f2f2; }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        button[type="submit"] {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button[type="submit"]:hover { background: #2980b9; }
+
+        canvas { border: 1px solid #ddd; border-radius: 5px; margin-top: 15px; background: white; }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            gap: 5px;
+            margin: 15px 0;
+        }
+        .matrix-grid input {
+            width: 50px; height: 50px; text-align: center; padding: 5px; margin: 0; font-size: 1.2rem;
+        }
+
+        .editor-container { display: flex; flex-direction: column; gap: 10px; }
+        .editor-toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+        .editor-toolbar button {
+            background: #ecf0f1; border: 1px solid #bdc3c7; padding: 8px 12px; border-radius: 5px; cursor: pointer;
+        }
+        .editor-toolbar button:hover { background: #d5dbdb; }
+
+        #previewDeriva {
+            border: 1px solid #ccc; padding: 15px; border-radius: 5px; background: #fafafa;
+            min-height: 200px; overflow-wrap: break-word;
+        }
+
+        #previewDeriva h1 { font-size: 2em; margin: 0.5em 0; }
+        #previewDeriva h2 { font-size: 1.5em; margin: 0.5em 0; }
+        #previewDeriva h3 { font-size: 1.2em; margin: 0.5em 0; }
+        #previewDeriva strong { color: #c0392b; }
+        #previewDeriva footer { background: #ecf0f1; padding: 10px; margin-top: 20px; border-radius: 5px; font-size: 0.9em; color: #7f8c8d; }
+        #previewDeriva .code-block { background: #2d2d2d; color: #f8f8f2; padding: 10px; border-radius: 5px; position: relative; margin: 10px 0; }
+        #previewDeriva .copy-btn { position: absolute; top: 5px; right: 5px; background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
+        #previewDeriva .copy-btn:hover { background: #219a52; }
+        #previewDeriva ul { list-style-type: disc; padding-left: 40px; }
+        #previewDeriva del { color: #e74c3c; }
+        #previewDeriva u { text-decoration-color: #3498db; }
+        #previewDeriva mark { background: #f1c40f; padding: 0 2px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+
+        .agenda-list { list-style: none; padding: 0; }
+        .agenda-list li {
+            background: #f9f9f9; margin: 5px 0; padding: 10px; border-left: 4px solid var(--secondary);
+            border-radius: 3px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .agenda-list .item-actions { display: flex; gap: 5px; }
+
+        .form-item { background: #f9f9f9; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; }
+        .form-item .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+        }
+        .modal-content h3 { margin-bottom: 15px; }
+        .modal-content input, .modal-content textarea { width: 100%; margin-bottom: 10px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+        @media (max-width: 768px) {
+            .matrix-grid { grid-template-columns: repeat(9, 1fr); gap: 3px; }
+            .matrix-grid input { width: 100%; height: auto; }
+            .tab button { padding: 8px 12px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Mini Deriva System Pro</h1>
+            <p>Sistema modular com armazenamento local, edição e exportação HTML</p>
+        </header>
+
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'Registros')">Registros</button>
+            <button class="tablinks" onclick="openTab(event, 'Agenda')">Agenda</button>
+            <button class="tablinks" onclick="openTab(event, 'MiniDeriva')">Mini Deriva</button>
+            <button class="tablinks" onclick="openTab(event, 'Formularios')">Formulários</button>
+            <button class="tablinks" onclick="openTab(event, 'Matriz')">Matriz 9x9</button>
+            <button class="tablinks" onclick="openTab(event, 'Config')">Configurações</button>
+        </div>
+
+        <!-- Aba Registros -->
+        <div id="Registros" class="tabcontent active">
+            <div class="toolbar">
+                <button class="btn-download" onclick="downloadTabHTML('Registros')">⬇ Baixar HTML</button>
+                <button class="btn-layout" onclick="openLayoutEditor('Registros')">🎨 Editar Layout</button>
+            </div>
+            <h2>Registros (CRUD + Gráfico)</h2>
+            <form id="formRegistro">
+                <input type="hidden" id="registroIndex" value="-1">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="nome" required>
+                </div>
+                <div class="form-group">
+                    <label>Data:</label>
+                    <input type="date" id="data" required>
+                </div>
+                <div class="form-group">
+                    <label>Valor:</label>
+                    <input type="number" id="valor" required>
+                </div>
+                <button type="submit" id="btnSalvarRegistro">Salvar Registro</button>
+            </form>
+            <table id="tabelaRegistros">
+                <thead><tr><th>Nome</th><th>Data</th><th>Valor</th><th>Ações</th></tr></thead>
+                <tbody></tbody>
+            </table>
+            <canvas id="graficoCanvas" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Aba Agenda -->
+        <div id="Agenda" class="tabcontent">
+            <div class="toolbar">
+                <button class="btn-download" onclick="downloadTabHTML('Agenda')">⬇ Baixar HTML</button>
+                <button class="btn-layout" onclick="openLayoutEditor('Agenda')">🎨 Editar Layout</button>
+            </div>
+            <h2>Agenda / Lembretes</h2>
+            <form id="formAgenda">
+                <input type="hidden" id="agendaIndex" value="-1">
+                <div class="form-group">
+                    <label>Título:</label>
+                    <input type="text" id="tituloAgenda" required>
+                </div>
+                <div class="form-group">
+                    <label>Data:</label>
+                    <input type="date" id="dataAgenda" required>
+                </div>
+                <button type="submit" id="btnSalvarAgenda">Adicionar Lembrete</button>
+            </form>
+            <ul class="agenda-list" id="listaAgenda"></ul>
+            <button onclick="verificarNotificacoes()">Verificar Agora</button>
+        </div>
+
+        <!-- Aba Mini Deriva -->
+        <div id="MiniDeriva" class="tabcontent">
+            <div class="toolbar">
+                <button class="btn-download" onclick="downloadTabHTML('MiniDeriva')">⬇ Baixar HTML</button>
+                <button class="btn-layout" onclick="openLayoutEditor('MiniDeriva')">🎨 Editar Layout</button>
+            </div>
+            <h2>Mini Deriva (Editor Avançado)</h2>
+            <div class="editor-container">
+                <div class="editor-toolbar">
+                    <button onclick="insertText('**', '**')">Título</button>
+                    <button onclick="insertText('/', ';')">Negrito</button>
+                    <button onclick="insertText('*/', '/*')">Rodapé</button>
+                    <button onclick="insertText('c:', ':c')">Código</button>
+                    <button onclick="insertText('_', '_')">Itálico</button>
+                    <button onclick="insertText('--', '--')">Riscado</button>
+                    <button onclick="insertText('++', '++')">Sublinhado</button>
+                    <button onclick="insertText('{{', '}}')">Marcar</button>
+                    <button onclick="insertText('0x', ';')">ASM Code</button>
+                </div>
+                <textarea id="editorDeriva" rows="12" oninput="renderDeriva()" placeholder="Digite seu texto aqui..."></textarea>
+                <h3>Preview:</h3>
+                <div id="previewDeriva"></div>
+            </div>
+        </div>
+
+        <!-- Aba Formulários -->
+        <div id="Formularios" class="tabcontent">
+            <div class="toolbar">
+                <button class="btn-download" onclick="downloadTabHTML('Formularios')">⬇ Baixar HTML</button>
+                <button class="btn-layout" onclick="openLayoutEditor('Formularios')">🎨 Editar Layout</button>
+            </div>
+            <h2>Construtor de Formulários</h2>
+            <div class="form-group">
+                <label>Nome do Formulário:</label>
+                <input type="text" id="nomeFormulario">
+            </div>
+            <div class="form-group">
+                <label>Campos (separados por vírgula):</label>
+                <input type="text" id="camposFormulario" placeholder="ex: nome, data, nota">
+            </div>
+            <button onclick="criarFormulario()">Criar Formulário</button>
+            <div id="areaFormulario"></div>
+        </div>
+
+        <!-- Aba Matriz -->
+        <div id="Matriz" class="tabcontent">
+            <div class="toolbar">
+                <button class="btn-download" onclick="downloadTabHTML('Matriz')">⬇ Baixar HTML</button>
+                <button class="btn-layout" onclick="openLayoutEditor('Matriz')">🎨 Editar Layout</button>
+            </div>
+            <h2>Matriz 9x9 (Gera código do formulário)</h2>
+            <div class="form-group">
+                <label>Nome da Matriz:</label>
+                <input type="text" id="nomeMatriz" placeholder="Nome para salvar">
+                <button onclick="salvarMatriz()">Salvar Matriz</button>
+            </div>
+            <div class="matrix-grid" id="matrizGrid"></div>
+            <button onclick="gerarCodigoMatriz()">Gerar Código</button>
+            <p>Código: <span id="codigoMatriz"></span></p>
+            <h3>Matrizes Salvas</h3>
+            <div id="listaMatrizes"></div>
+        </div>
+
+        <!-- Aba Config -->
+        <div id="Config" class="tabcontent">
+            <div class="toolbar">
+                <button class="btn-download" onclick="downloadTabHTML('Config')">⬇ Baixar HTML</button>
+                <button class="btn-layout" onclick="openLayoutEditor('Config')">🎨 Editar Layout</button>
+            </div>
+            <h2>Configurações</h2>
+            <p>Backup Firebase (placeholder)</p>
+            <button onclick="backupFirebase()">Backup para Firebase</button>
+            <p id="statusBackup"></p>
+            <h3>Códigos WebAssembly</h3>
+            <p>Cognitiva: <code>0x0222</code> | Psicossocial: <code>0x0224</code></p>
+            <h3>Sistema Matemático por Data</h3>
+            <p>Dias desde 01/01/2024: <span id="diasPassados"></span></p>
+            <p>Soma acumulada (dias * 10): <span id="somaAcumulada"></span></p>
+        </div>
+    </div>
+
+    <!-- Modal para edição de layout -->
+    <div id="layoutModal" class="modal">
+        <div class="modal-content">
+            <h3>Editar Layout para Download</h3>
+            <label>Título da aba:</label>
+            <input type="text" id="layoutTitle">
+            <label>Cor de fundo:</label>
+            <input type="color" id="layoutBgColor" value="#ffffff">
+            <label>Cor do texto:</label>
+            <input type="color" id="layoutTextColor" value="#333333">
+            <label>Tamanho da fonte (px):</label>
+            <input type="number" id="layoutFontSize" value="16">
+            <label>Largura máxima (px):</label>
+            <input type="number" id="layoutMaxWidth" value="800">
+            <div class="modal-actions">
+                <button onclick="closeLayoutEditor()">Cancelar</button>
+                <button onclick="applyLayoutAndDownload()">Aplicar e Baixar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================== UTILITÁRIOS ==================
+        const DB_KEY = 'registros_mini_deriva';
+        const AGENDA_KEY = 'agenda_mini_deriva';
+        const FORM_KEY = 'formularios_mini_deriva';
+        const MATRIZ_KEY = 'matrizes_mini_deriva';
+
+        function salvarDB(dados) { localStorage.setItem(DB_KEY, JSON.stringify(dados)); }
+        function carregarDB() { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
+        function salvarAgenda(dados) { localStorage.setItem(AGENDA_KEY, JSON.stringify(dados)); }
+        function carregarAgenda() { return JSON.parse(localStorage.getItem(AGENDA_KEY) || '[]'); }
+        function salvarFormularios(dados) { localStorage.setItem(FORM_KEY, JSON.stringify(dados)); }
+        function carregarFormularios() { return JSON.parse(localStorage.getItem(FORM_KEY) || '[]'); }
+        function salvarMatrizes(dados) { localStorage.setItem(MATRIZ_KEY, JSON.stringify(dados)); }
+        function carregarMatrizes() { return JSON.parse(localStorage.getItem(MATRIZ_KEY) || '[]'); }
+
+        // ================== NAVEGAÇÃO ==================
+        function openTab(evt, tabName) {
+            const tabcontents = document.getElementsByClassName('tabcontent');
+            for (let i = 0; i < tabcontents.length; i++) tabcontents[i].classList.remove('active');
+            const tablinks = document.getElementsByClassName('tablinks');
+            for (let i = 0; i < tablinks.length; i++) tablinks[i].className = tablinks[i].className.replace(' active', '');
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.className += ' active';
+            if (tabName === 'Registros') atualizarTabelaEGrafico();
+            if (tabName === 'Agenda') atualizarListaAgenda();
+            if (tabName === 'Config') atualizarCalculoData();
+            if (tabName === 'MiniDeriva') renderDeriva();
+            if (tabName === 'Matriz') atualizarListaMatrizes();
+            if (tabName === 'Formularios') exibirFormularios();
+        }
+
+        // ================== EDITAR LAYOUT E DOWNLOAD ==================
+        let currentTabForDownload = '';
+        function openLayoutEditor(tabName) {
+            currentTabForDownload = tabName;
+            document.getElementById('layoutTitle').value = tabName;
+            document.getElementById('layoutBgColor').value = '#ffffff';
+            document.getElementById('layoutTextColor').value = '#333333';
+            document.getElementById('layoutFontSize').value = 16;
+            document.getElementById('layoutMaxWidth').value = 800;
+            document.getElementById('layoutModal').style.display = 'block';
+        }
+        function closeLayoutEditor() {
+            document.getElementById('layoutModal').style.display = 'none';
+        }
+        function applyLayoutAndDownload() {
+            const title = document.getElementById('layoutTitle').value || currentTabForDownload;
+            const bgColor = document.getElementById('layoutBgColor').value;
+            const textColor = document.getElementById('layoutTextColor').value;
+            const fontSize = document.getElementById('layoutFontSize').value + 'px';
+            const maxWidth = document.getElementById('layoutMaxWidth').value + 'px';
+            downloadTabHTMLWithLayout(currentTabForDownload, { title, bgColor, textColor, fontSize, maxWidth });
+            closeLayoutEditor();
+        }
+
+        function downloadTabHTMLWithLayout(tabName, layout) {
+            const tabContent = document.getElementById(tabName);
+            const clone = tabContent.cloneNode(true);
+            clone.querySelectorAll('.toolbar').forEach(el => el.remove()); // remove toolbar
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>${layout.title} - Mini Deriva Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: ${layout.bgColor};
+            color: ${layout.textColor};
+            font-size: ${layout.fontSize};
+            max-width: ${layout.maxWidth};
+            margin-left: auto;
+            margin-right: auto;
+        }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        .matrix-grid { display: grid; grid-template-columns: repeat(9, 40px); gap: 5px; }
+        .matrix-grid input { width: 40px; height: 40px; text-align: center; }
+        .code-block { background: #2d2d2d; color: #f8f8f2; padding: 10px; border-radius: 5px; position: relative; }
+        .copy-btn { position: absolute; top: 5px; right: 5px; background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; }
+        footer { background: #ecf0f1; padding: 10px; margin-top: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>${layout.title}</h1>
+    ${clone.innerHTML}
+</body>
+</html>`;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${tabName}_export.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Manter compatibilidade com botão simples (sem layout)
+        function downloadTabHTML(tabName) {
+            openLayoutEditor(tabName); // agora abre o modal
+        }
+
+        // ================== REGISTROS ==================
+        document.getElementById('formRegistro').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const index = document.getElementById('registroIndex').value;
+            const nome = document.getElementById('nome').value;
+            const data = document.getElementById('data').value;
+            const valor = parseFloat(document.getElementById('valor').value);
+            if (!nome || !data || isNaN(valor)) return;
+            const registros = carregarDB();
+            if (index === '-1') {
+                registros.push({ nome, data, valor });
+            } else {
+                registros[parseInt(index)] = { nome, data, valor };
+                document.getElementById('registroIndex').value = '-1';
+                document.getElementById('btnSalvarRegistro').textContent = 'Salvar Registro';
+            }
+            salvarDB(registros);
+            document.getElementById('formRegistro').reset();
+            atualizarTabelaEGrafico();
+        });
+
+        function editarRegistro(index) {
+            const registros = carregarDB();
+            const reg = registros[index];
+            document.getElementById('nome').value = reg.nome;
+            document.getElementById('data').value = reg.data;
+            document.getElementById('valor').value = reg.valor;
+            document.getElementById('registroIndex').value = index;
+            document.getElementById('btnSalvarRegistro').textContent = 'Atualizar Registro';
+        }
+
+        function excluirRegistro(index) {
+            if (confirm('Excluir este registro?')) {
+                const registros = carregarDB();
+                registros.splice(index, 1);
+                salvarDB(registros);
+                atualizarTabelaEGrafico();
+            }
+        }
+
+        function atualizarTabelaEGrafico() {
+            const registros = carregarDB();
+            const tbody = document.querySelector('#tabelaRegistros tbody');
+            tbody.innerHTML = '';
+            registros.forEach((r, i) => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = r.nome;
+                row.insertCell().textContent = r.data;
+                row.insertCell().textContent = r.valor;
+                const acoes = row.insertCell();
+                acoes.innerHTML = `<button class="btn-edit" onclick="editarRegistro(${i})">Editar</button>
+                                   <button class="btn-delete" onclick="excluirRegistro(${i})">Excluir</button>`;
+            });
+            desenharGrafico(registros);
+        }
+
+        function desenharGrafico(registros) {
+            const canvas = document.getElementById('graficoCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (registros.length === 0) return;
+            const maxValor = Math.max(...registros.map(r => r.valor));
+            const barWidth = canvas.width / registros.length - 10;
+            registros.forEach((r, i) => {
+                const altura = (r.valor / maxValor) * (canvas.height - 40);
+                const x = i * (barWidth + 10) + 10;
+                const y = canvas.height - altura - 20;
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(x, y, barWidth, altura);
+                ctx.fillStyle = '#000';
+                ctx.fillText(r.nome, x, canvas.height - 5);
+                ctx.fillText(r.valor, x, y - 5);
+            });
+        }
+
+        // ================== AGENDA ==================
+        document.getElementById('formAgenda').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const index = document.getElementById('agendaIndex').value;
+            const titulo = document.getElementById('tituloAgenda').value;
+            const data = document.getElementById('dataAgenda').value;
+            if (!titulo || !data) return;
+            const agenda = carregarAgenda();
+            if (index === '-1') {
+                agenda.push({ titulo, data, notificado: false });
+            } else {
+                agenda[parseInt(index)] = { ...agenda[parseInt(index)], titulo, data };
+                document.getElementById('agendaIndex').value = '-1';
+                document.getElementById('btnSalvarAgenda').textContent = 'Adicionar Lembrete';
+            }
+            salvarAgenda(agenda);
+            document.getElementById('formAgenda').reset();
+            atualizarListaAgenda();
+        });
+
+        function editarAgenda(index) {
+            const agenda = carregarAgenda();
+            const item = agenda[index];
+            document.getElementById('tituloAgenda').value = item.titulo;
+            document.getElementById('dataAgenda').value = item.data;
+            document.getElementById('agendaIndex').value = index;
+            document.getElementById('btnSalvarAgenda').textContent = 'Atualizar Lembrete';
+        }
+
+        function excluirAgenda(index) {
+            if (confirm('Excluir este lembrete?')) {
+                const agenda = carregarAgenda();
+                agenda.splice(index, 1);
+                salvarAgenda(agenda);
+                atualizarListaAgenda();
+            }
+        }
+
+        function atualizarListaAgenda() {
+            const agenda = carregarAgenda();
+            const lista = document.getElementById('listaAgenda');
+            lista.innerHTML = '';
+            agenda.forEach((item, i) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${item.titulo} - ${item.data}</span>
+                    <span class="item-actions">
+                        <button class="btn-edit" onclick="editarAgenda(${i})">Editar</button>
+                        <button class="btn-delete" onclick="excluirAgenda(${i})">Excluir</button>
+                    </span>`;
+                lista.appendChild(li);
+            });
+        }
+
+        function verificarNotificacoes() {
+            if (!('Notification' in window)) {
+                alert('Este navegador não suporta notificações.');
+                return;
+            }
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission().then(perm => {
+                    if (perm === 'granted') checarDatas();
+                });
+            } else {
+                checarDatas();
+            }
+        }
+
+        function checarDatas() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const agenda = carregarAgenda();
+            let mudou = false;
+            agenda.forEach(item => {
+                if (item.data === hoje && !item.notificado) {
+                    new Notification('📌 Lembrete', { body: item.titulo });
+                    item.notificado = true;
+                    mudou = true;
+                }
+            });
+            if (mudou) salvarAgenda(agenda);
+        }
+
+        setInterval(verificarNotificacoes, 60000);
+
+        // ================== MINI DERIVA EDITOR ==================
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function insertText(prefix, suffix) {
+            const editor = document.getElementById('editorDeriva');
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selected = editor.value.substring(start, end);
+            const replacement = prefix + selected + suffix;
+            editor.value = editor.value.substring(0, start) + replacement + editor.value.substring(end);
+            editor.focus();
+            editor.selectionStart = start + prefix.length;
+            editor.selectionEnd = start + prefix.length + selected.length;
+            renderDeriva();
+        }
+
+        function renderDeriva() {
+            const editor = document.getElementById('editorDeriva');
+            const preview = document.getElementById('previewDeriva');
+            let texto = escapeHTML(editor.value);
+
+            texto = texto.replace(/\*\*(.+?)\*\*/g, '<h2>$1</h2>');
+            texto = texto.replace(/\/(.+?);/g, '<strong>$1</strong>');
+            texto = texto.replace(/\*\/(.+?)\/\*/g, '<footer>$1</footer>');
+            texto = texto.replace(/c:(.+?):c/g, function(match, code) {
+                return `<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copiar</button><pre><code>${code}</code></pre></div>`;
+            });
+            texto = texto.replace(/_(.+?)_/g, '<em>$1</em>');
+            texto = texto.replace(/--(.+?)--/g, '<del>$1</del>');
+            texto = texto.replace(/\+\+(.+?)\+\+/g, '<u>$1</u>');
+            texto = texto.replace(/\{\{(.+?)\}\}/g, '<mark>$1</mark>');
+            texto = texto.replace(/(0x[0-9A-Fa-f]+;)/g, '<span style="background:yellow;font-weight:bold;">$1</span>');
+
+            const linhas = texto.split('\n');
+            let htmlFinal = '';
+            let inList = false;
+            for (let linha of linhas) {
+                if (linha.startsWith('- ')) {
+                    if (!inList) { htmlFinal += '<ul>'; inList = true; }
+                    htmlFinal += '<li>' + linha.substring(2) + '</li>';
+                } else {
+                    if (inList) { htmlFinal += '</ul>'; inList = false; }
+                    if (linha.trim() === '') {
+                        htmlFinal += '<br>';
+                    } else {
+                        htmlFinal += '<p>' + linha + '</p>';
+                    }
+                }
+            }
+            if (inList) htmlFinal += '</ul>';
+
+            preview.innerHTML = htmlFinal;
+        }
+
+        function copyCode(button) {
+            const codeBlock = button.nextElementSibling;
+            const code = codeBlock.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                button.textContent = 'Copiado!';
+                setTimeout(() => button.textContent = 'Copiar', 2000);
+            });
+        }
+
+        // ================== FORMULÁRIOS ==================
+        function criarFormulario() {
+            const nome = document.getElementById('nomeFormulario').value;
+            const campos = document.getElementById('camposFormulario').value.split(',').map(c => c.trim()).filter(c => c);
+            if (!nome || campos.length === 0) return;
+            const formularios = carregarFormularios();
+            formularios.push({ nome, campos, respostas: [] });
+            salvarFormularios(formularios);
+            document.getElementById('nomeFormulario').value = '';
+            document.getElementById('camposFormulario').value = '';
+            exibirFormularios();
+        }
+
+        function editarFormulario(index) {
+            const formularios = carregarFormularios();
+            const form = formularios[index];
+            const novoNome = prompt('Novo nome do formulário:', form.nome);
+            if (novoNome === null) return;
+            const novosCampos = prompt('Novos campos (separados por vírgula):', form.campos.join(', '));
+            if (novosCampos === null) return;
+            form.nome = novoNome;
+            form.campos = novosCampos.split(',').map(c => c.trim()).filter(c => c);
+            salvarFormularios(formularios);
+            exibirFormularios();
+        }
+
+        function excluirFormulario(index) {
+            if (confirm('Excluir este formulário?')) {
+                const formularios = carregarFormularios();
+                formularios.splice(index, 1);
+                salvarFormularios(formularios);
+                exibirFormularios();
+            }
+        }
+
+        function exibirFormularios() {
+            const area = document.getElementById('areaFormulario');
+            area.innerHTML = '<h3>Formulários Criados</h3>';
+            const formularios = carregarFormularios();
+            formularios.forEach((form, idx) => {
+                const div = document.createElement('div');
+                div.className = 'form-item';
+                div.innerHTML = `
+                    <div class="form-header">
+                        <h4>${form.nome}</h4>
+                        <span>
+                            <button class="btn-edit" onclick="editarFormulario(${idx})">Editar</button>
+                            <button class="btn-delete" onclick="excluirFormulario(${idx})">Excluir</button>
+                        </span>
+                    </div>`;
+                const formHTML = document.createElement('form');
+                formHTML.dataset.formIndex = idx;
+                form.campos.forEach(campo => {
+                    const label = document.createElement('label');
+                    label.textContent = campo + ': ';
+                    const input = document.createElement('input');
+                    input.name = campo;
+                    label.appendChild(input);
+                    formHTML.appendChild(label);
+                    formHTML.appendChild(document.createElement('br'));
+                });
+                const btn = document.createElement('button');
+                btn.textContent = 'Enviar Resposta';
+                btn.type = 'submit';
+                formHTML.appendChild(btn);
+                formHTML.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const dados = {};
+                    new FormData(formHTML).forEach((valor, chave) => dados[chave] = valor);
+                    const forms = carregarFormularios();
+                    forms[idx].respostas.push(dados);
+                    salvarFormularios(forms);
+                    alert('Resposta salva!');
+                });
+                div.appendChild(formHTML);
+                area.appendChild(div);
+            });
+        }
+
+        // ================== MATRIZ 9x9 ==================
+        const matrizGrid = document.getElementById('matrizGrid');
+        for (let i = 0; i < 81; i++) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = 0;
+            input.max = 9;
+            input.value = 0;
+            matrizGrid.appendChild(input);
+        }
+
+        function gerarCodigoMatriz() {
+            const inputs = matrizGrid.querySelectorAll('input');
+            let codigo = '';
+            inputs.forEach((input, index) => {
+                codigo += input.value;
+                if ((index + 1) % 9 === 0 && index !== 80) codigo += '-';
+            });
+            document.getElementById('codigoMatriz').textContent = codigo;
+            return codigo;
+        }
+
+        function salvarMatriz() {
+            const nome = document.getElementById('nomeMatriz').value;
+            if (!nome) { alert('Digite um nome para a matriz.'); return; }
+            const codigo = gerarCodigoMatriz();
+            const matrizes = carregarMatrizes();
+            matrizes.push({ nome, codigo, valores: Array.from(matrizGrid.querySelectorAll('input')).map(i => i.value) });
+            salvarMatrizes(matrizes);
+            document.getElementById('nomeMatriz').value = '';
+            atualizarListaMatrizes();
+        }
+
+        function carregarMatriz(index) {
+            const matrizes = carregarMatrizes();
+            const matriz = matrizes[index];
+            const inputs = matrizGrid.querySelectorAll('input');
+            matriz.valores.forEach((valor, i) => inputs[i].value = valor);
+            gerarCodigoMatriz();
+            document.getElementById('nomeMatriz').value = matriz.nome;
+        }
+
+        function excluirMatriz(index) {
+            if (confirm('Excluir esta matriz?')) {
+                const matrizes = carregarMatrizes();
+                matrizes.splice(index, 1);
+                salvarMatrizes(matrizes);
+                atualizarListaMatrizes();
+            }
+        }
+
+        function atualizarListaMatrizes() {
+            const lista = document.getElementById('listaMatrizes');
+            lista.innerHTML = '';
+            const matrizes = carregarMatrizes();
+            matrizes.forEach((m, i) => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.style.marginBottom = '5px';
+                div.innerHTML = `<span>${m.nome} - ${m.codigo}</span>
+                    <span>
+                        <button class="btn-edit" onclick="carregarMatriz(${i})">Carregar</button>
+                        <button class="btn-delete" onclick="excluirMatriz(${i})">Excluir</button>
+                    </span>`;
+                lista.appendChild(div);
+            });
+        }
+
+        // ================== CONFIG / CÁLCULO DATA ==================
+        function atualizarCalculoData() {
+            const dataInicial = new Date('2024-01-01');
+            const agora = new Date();
+            const dias = Math.floor((agora - dataInicial) / (1000 * 60 * 60 * 24));
+            document.getElementById('diasPassados').textContent = dias;
+            document.getElementById('somaAcumulada').textContent = dias * 10;
+        }
+
+        function backupFirebase() {
+            document.getElementById('statusBackup').textContent = 'Backup simulado (Firebase não configurado).';
+        }
+
+        // ================== INICIALIZAÇÃO ==================
+        atualizarTabelaEGrafico();
+        atualizarListaAgenda();
+        exibirFormularios();
+        atualizarCalculoData();
+        renderDeriva();
+        atualizarListaMatrizes();
+    </script>
+</body>
+</html>
