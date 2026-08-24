@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pragmatic Relation & Math Case</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    /* Gradient Background Lights */
+    .glow-bg-1 {
+      position: fixed;
+      top: -10%;
+      left: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: pulseGlow 10s ease-in-out infinite alternate;
+    }
+
+    .glow-bg-2 {
+      position: fixed;
+      bottom: -10%;
+      right: 10%;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: pulseGlow 12s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes pulseGlow {
+      0% { transform: scale(1) translate(0, 0); opacity: 0.7; }
+      100% { transform: scale(1.15) translate(20px, -20px); opacity: 1; }
+    }
+
+    /* Glassmorphism Styles */
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .glass-card-interactive {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card-interactive:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Custom Slider Styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 8px;
+      cursor: pointer;
+      background: #334155;
+      border-radius: 9999px;
+      transition: background 0.2s;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+      transition: transform 0.15s ease;
+    }
+
+    input[type=range]:hover::-webkit-slider-thumb {
+      transform: scale(1.25);
+    }
+
+    /* Smooth Fade Slide Animations */
+    .animate-fadeInUp {
+      animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="relative flex flex-col items-center justify-start min-h-screen p-4 sm:p-6 lg:p-8">
+
+  <div class="glow-bg-1"></div>
+  <div class="glow-bg-2"></div>
+
+  <div id="root" class="w-full max-w-4xl z-10"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function App() {
+      // Estado de Navegação / Tab Ativa
+      const [activeTab, setActiveTab] = useState("iar"); // "iar" ou "fatorial"
+
+      /* ========================================================
+         ESTADOS PARA CALCULADORA DE FATORIAL (PRECISÃO EXATA)
+         ======================================================== */
+      const [fatInput, setFatInput] = useState("");
+      const [fatResult, setFatResult] = useState(null);
+      const [fatError, setFatError] = useState("");
+
+      /* ========================================================
+         ESTADOS PARA ANÁLISE PRAGMÁTICA DE ASSIMETRIA (IAR)
+         ======================================================== */
+      const [ageGap, setAgeGap] = useState(20);         // 0 a 100
+      const [financeiro, setFinanceiro] = useState("0"); // 0 (Ambos), 50 (Nenhum), 100 (Apenas 1)
+      const [tipoRel, setTipoRel] = useState("30");     // 30 (Casado/União), 70 (Namoro)
+      const [difResp, setDifResp] = useState(25);       // 0 a 100
+      const [distancia, setDistancia] = useState("0");  // 0 (Perto), 50 (Média), 100 (Longe)
+      const [pobreza, setPobreza] = useState("0");      // 0 (Não), 100 (Sim)
+      const [desemprego, setDesemprego] = useState("0");  // 0 (Não), 100 (Sim)
+
+      // 5 Fatores Adicionais (Escala 0 a 100)
+      const [indifEmocional, setIndifEmocional] = useState(15);
+      const [diferencaValores, setDiferencaValores] = useState(20);
+      const [lazer, setLazer] = useState(20);
+      const [planos, setPlanos] = useState(25);
+      const [interferencia, setInterferencia] = useState(10);
+
+      // Resultado IAR
+      const [iar, setIar] = useState(null);
+      const [relatorio, setRelatorio] = useState(null);
+
+      /* ========================================================
+         1. CÁLCULO DE FATORIAL COM BIGINT (SEM OVERFLOW)
+         ======================================================== */
+      const calcularFatorial = () => {
+        setFatError("");
+        setFatResult(null);
+
+        if (fatInput === "" || fatInput === null) {
+          setFatError("Por favor, informe um número inteiro.");
+          return;
+        }
+
+        const num = Number(fatInput);
+
+        // Valida se é inteiro
+        if (!Number.isInteger(num)) {
+          setFatError("O fatorial é definido apenas para números inteiros positivos.");
+          return;
+        }
+
+        if (num < 0) {
+          setFatError("Não existe fatorial para números negativos.");
+          return;
+        }
+
+        if (num > 500) {
+          setFatError("Para preservar o desempenho do seu navegador, escolha um número até 500.");
+          return;
+        }
+
+        // Cálculo exato utilizando BigInt
+        let resultado = 1n;
+        for (let i = 2n; i <= BigInt(num); i++) {
+          resultado *= i;
+        }
+
+        const resStr = resultado.toString();
+        setFatResult({
+          num,
+          valorStr: resStr,
+          digitos: resStr.length
+        });
+      };
+
+      /* ========================================================
+         2. CÁLCULO DO IAR E GERADOR DE AÇÕES PRAGMÁTICAS
+         ======================================================== */
+      const calcularIAR = () => {
+        const valAgeGap = Number(ageGap);
+        const valFinanceiro = Number(financeiro);
+        const valTipoRel = Number(tipoRel);
+        const valDifResp = Number(difResp);
+        const valDistancia = Number(distancia);
+        const valPobreza = Number(pobreza);
+        const valDesemprego = Number(desemprego);
+
+        // Média dos 5 fatores adicionais
+        const mediaNeutros = (
+          Number(indifEmocional) +
+          Number(diferencaValores) +
+          Number(lazer) +
+          Number(planos) +
+          Number(interferencia)
+        ) / 5;
+
+        // MATRIZ DE PESOS (Soma exatamente 1.00 / 100%)
+        // - Idade: 12%
+        // - Dependência Financeira: 15%
+        // - Tipo de Relação: 8%
+        // - Divergência Responsabilidades/Metas: 15%
+        // - Distância Geográfica: 10%
+        // - Baixa Renda / Desemprego: 10%
+        // - Desemprego: 10%
+        // - Fatores Neutros / Convivência: 20%
+        const iarCalc = (
+          0.12 * valAgeGap +
+          0.15 * valFinanceiro +
+          0.08 * valTipoRel +
+          0.15 * valDifResp +
+          0.10 * valDistancia +
+          0.10 * valPobreza +
+          0.10 * valDesemprego +
+          0.20 * mediaNeutros
+        );
+
+        const iarArredondado = Math.round(iarCalc * 10) / 10;
+        setIar(iarArredondado);
+
+        // AÇÕES PRAGMÁTICAS PARA MANTER A RELAÇÃO SAUDÁVEL
+        let status = "";
+        let badgeColor = "";
+        let barGradient = "";
+        let accaoPragmatica = [];
+
+        if (iarArredondado <= 25) {
+          status = "Alta Simetria & Equilíbrio";
+          badgeColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+          barGradient = "from-emerald-500 to-teal-400";
+          accaoPragmatica = [
+            "Manter comunicação transparente quinzenal para revisar alinhamentos.",
+            "Preservar a autonomia individual sem sobrecarregar um dos lados.",
+            "Continuar dividindo custos de forma proporcional ou equitativa conforme combinado."
+          ];
+        } else if (iarArredondado <= 45) {
+          status = "Assimetria Leve (Requer Ajustes Finos)";
+          badgeColor = "bg-yellow-500/20 text-yellow-300 border-yellow-500/40";
+          barGradient = "from-yellow-400 to-amber-500";
+          accaoPragmatica = [
+            "Ajustar contribuição financeira proporcional à renda real de cada um.",
+            "Estabelecer um calendário fixo de encontros/visitas se houver distância.",
+            "Validar divisão de tarefas domésticas e rotina pragmática para evitar ressentimentos embutidos."
+          ];
+        } else if (iarArredondado <= 65) {
+          status = "Assimetria Moderada (Atenção Pragmática necessária)";
+          badgeColor = "bg-orange-500/20 text-orange-300 border-orange-500/40";
+          barGradient = "from-amber-500 to-orange-600";
+          accaoPragmatica = [
+            "Estabelecer prazos concretos para questões financeiras ou de desemprego (ex: meta de 3 a 6 meses para recolocação).",
+            "Definir regras claras sobre gastos conjuntos e limites de suporte financeiro.",
+            "Definir um plano de transição para a distância (caso aplicável), estabelecendo uma data limite para morarem próximos."
+          ];
+        } else if (iarArredondado <= 80) {
+          status = "Assimetria Elevada (Risco de Sobrecarga e Dependência)";
+          badgeColor = "bg-rose-500/20 text-rose-300 border-rose-500/40";
+          barGradient = "from-orange-600 to-rose-600";
+          accaoPragmatica = [
+            "Criar acordos pragmáticos por escrito/alinhamento formal sobre responsabilidades e despesas.",
+            "Se houver dependência financeira total de um lado, definir uma ajuda custo pré-estipulada sem gerar cobranças abusivas.",
+            "Reavaliar se a indiferença emocional atual deriva de estresse financeiro e buscar mediação/diálogo direto sem acusações."
+          ];
+        } else {
+          status = "Assimetria Extrema (Alto Risco de Instabilidade)";
+          badgeColor = "bg-red-600/25 text-red-300 border-red-500/50";
+          barGradient = "from-rose-600 to-red-700";
+          accaoPragmatica = [
+            "Garantir reserva financeira individual de emergência para que a permanência no relacionamento seja por escolha afetiva e não por necessidade material.",
+            "Estabelecer limites claros de respeito e não aceitar ultimatos decorrentes da disparidade de poder.",
+            "Procurar rede de apoio externa (família, amigos ou orientação profissional) para avaliar a sustentabilidade do vínculo."
+          ];
+        }
+
+        setRelatorio({
+          status,
+          badgeColor,
+          barGradient,
+          accaoPragmatica
+        });
+      };
+
+      return (
+        <div className="flex flex-col gap-6 w-full">
+          
+          {/* Header principal */}
+          <header className="glass-card rounded-2xl p-6 sm:p-8 text-center flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3">
+              <span>Análise Pragmática & Matemática</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-indigo-200">
+              Pragmatic Relation & Math Case
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-base max-w-xl mt-2">
+              Ferramenta pragmática para análise objetiva da dinâmica de poder relacional e calculadora matemática de precisão.
+            </p>
+
+            {/* Abas de navegação com Flexbox */}
+            <div className="flex items-center justify-center p-1.5 bg-slate-900/80 border border-slate-700/60 rounded-xl mt-6 w-full max-w-md gap-2">
+              <button
+                onClick={() => setActiveTab("iar")}
+                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  activeTab === "iar"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                }`}
+              >
+                <span>⚖️</span>
+                <span>Assimetria (IAR)</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("fatorial")}
+                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  activeTab === "fatorial"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                }`}
+              >
+                <span>🧮</span>
+                <span>Calculadora Fatorial</span>
+              </button>
+            </div>
+          </header>
+
+          {/* ABA 1: MEDIDOR DE ASSIMETRIA RELACIONAL */}
+          {activeTab === "iar" && (
+            <main className="flex flex-col gap-6 animate-fadeInUp">
+              
+              <section className="glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
+                <div className="border-b border-slate-700/60 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <span>📊</span> Parâmetros de Entrada da Relação
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Ajuste os indicadores conforme a realidade objetiva observada no relacionamento.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid Responsiva Flex/Grid de Opções Principais */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Age Gap */}
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium text-slate-200">[agegap *or" 0x00027]:</label>
+                      <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                        {ageGap}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={ageGap}
+                      onChange={(e) => setAgeGap(e.target.value)}
+                    />
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Irrelevante / Próxima</span>
+                      <span>Muito Elevada</span>
+                    </div>
+                  </div>
+
+                  {/* Situação Financeira */}
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200">Situação Financeira:</label>
+                    <select
+                      value={financeiro}
+                      onChange={(e) => setFinanceiro(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Ambos possuem renda própria equivalente</option>
+                      <option value="50">Nenhum dos dois possui renda estável</option>
+                      <option value="100">Apenas UM dos lados sustenta financeiramente</option>
+                    </select>
+                  </div>
+
+                  {/* Tipo de Relacionamento */}
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200">Estrutura do Relacionamento:</label>
+                    <select
+                      value={tipoRel}
+                      onChange={(e) => setTipoRel(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="30">Casamento / União Estável (Moram juntos)</option>
+                      <option value="70">Namoro / Encontros sem coabitação</option>
+                    </select>
+                  </div>
+
+                  {/* Distância */}
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200">Distância Geográfica:</label>
+                    <select
+                      value={distancia}
+                      onChange={(e) => setDistancia(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Mesma cidade / Moram perto</option>
+                      <option value="50">Distância média (Cidades vizinhas)</option>
+                      <option value="100">Longa distância (Estados/Países distintos)</option>
+                    </select>
+                  </div>
+
+                  {/* Baixa renda / Desemprego */}
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200">Um lado é desempregado ou baixa renda?</label>
+                    <select
+                      value={pobreza}
+                      onChange={(e) => setPobreza(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Não (Padrão de vida equivalente/estável)</option>
+                      <option value="100">Sim (Um dos lados é desempregado ou tem baixa renda)</option>
+                    </select>
+                  </div>
+
+                  {/* Desemprego */}
+                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200">Há quadro de Desemprego atual?</label>
+                    <select
+                      value={desemprego}
+                      onChange={(e) => setDesemprego(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Não (Ambos trabalhando/ocupados)</option>
+                      <option value="100">Sim (Um dos lados está sem fonte de renda)</option>
+                    </select>
+                  </div>
+
+                </div>
+
+                {/* Diferença de Responsabilidades Slider */}
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 flex flex-col gap-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-slate-200">Divergência em Objetivos, Responsabilidades e Carreira:</label>
+                    <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                      {difResp}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={difResp}
+                    onChange={(e) => setDifResp(e.target.value)}
+                  />
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>100% Alinhados</span>
+                    <span>Totalmente Desalinhados / Opostos</span>
+                  </div>
+                </div>
+
+                {/* Bloco de Fatores Adicionais (Sliders Neutros) */}
+                <div className="mt-4 pt-4 border-t border-slate-700/60 flex flex-col gap-4">
+                  <h3 className="text-md font-semibold text-slate-200 flex items-center gap-2">
+                    <span>🧩</span> Fatores Adicionais de Convivência e Sintonia
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    {/* Indiferença Emocional */}
+                    <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Indiferença Emocional / Frieza:</span>
+                        <span className="text-indigo-400 font-bold">{indifEmocional}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={indifEmocional} onChange={(e) => setIndifEmocional(e.target.value)} />
+                    </div>
+
+                    {/* Diferença de Valores */}
+                    <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Divergência de Valores / Visão de Mundo:</span>
+                        <span className="text-indigo-400 font-bold">{diferencaValores}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={diferencaValores} onChange={(e) => setDiferencaValores(e.target.value)} />
+                    </div>
+
+                    {/* Lazer e Rotina */}
+                    <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Incompatibilidade de Lazer/Rotina:</span>
+                        <span className="text-indigo-400 font-bold">{lazer}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={lazer} onChange={(e) => setLazer(e.target.value)} />
+                    </div>
+
+                    {/* Planos de Futuro */}
+                    <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Descompasso nos Planos de Futuro:</span>
+                        <span className="text-indigo-400 font-bold">{planos}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={planos} onChange={(e) => setPlanos(e.target.value)} />
+                    </div>
+
+                    {/* Interferência de Terceiros */}
+                    <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5 sm:col-span-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Interferência Externa (Família/Amigos):</span>
+                        <span className="text-indigo-400 font-bold">{interferencia}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={interferencia} onChange={(e) => setInterferencia(e.target.value)} />
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Botão de Ação */}
+                <button
+                  onClick={calcularIAR}
+                  className="mt-2 w-full py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-base"
+                >
+                  <span>⚡</span>
+                  <span>Calcular Índice de Assimetria e Gerar Plano Pragmático</span>
+                </button>
+              </section>
+
+              {/* CARD DE RESULTADO IAR */}
+              {iar !== null && relatorio && (
+                <section className="glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6 animate-fadeInUp border-indigo-500/30">
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-4">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Resultado Diagnóstico</span>
+                      <h3 className="text-2xl font-bold text-white mt-1">
+                        IAR Calculado: <span className="text-indigo-400">{iar}</span> / 100
+                      </h3>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold border ${relatorio.badgeColor} self-start sm:self-auto`}>
+                      {relatorio.status}
+                    </span>
+                  </div>
+
+                  {/* Barra Visual Proporcional Animada */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs text-slate-400 font-semibold">
+                      <span>Simétrico (0)</span>
+                      <span>Assimetria Moderada (50)</span>
+                      <span>Extrema (100)</span>
+                    </div>
+                    <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${relatorio.barGradient} transition-all duration-700 ease-out`}
+                        style={{ width: `${Math.min(Math.max(iar, 3), 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Plano de Ação Pragmático para Manter Relação Saudável */}
+                  <div className="bg-slate-900/80 rounded-xl p-5 border border-slate-700/80 flex flex-col gap-4">
+                    <h4 className="text-md font-bold text-slate-100 flex items-center gap-2">
+                      <span>🛠️</span> Plano de Ação Pragmático para Manter a Relação Saudável:
+                    </h4>
+                    
+                    <ul className="flex flex-col gap-2.5">
+                      {relatorio.accaoPragmatica.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm text-slate-300 bg-slate-800/40 p-3 rounded-lg border border-slate-700/30">
+                          <span className="flex-shrink-0 text-indigo-400 font-bold">✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <p className="text-xs text-slate-500 italic text-center">
+                    * Nota Pragmática: O cálculo é um modelo analítico de apoio à decisão e reflexão objetiva, não substituindo o diálogo direto nem a orientação terapêutica especializada.
+                  </p>
+                </section>
+              )}
+
+            </main>
+          )}
+
+          {/* ABA 2: CALCULADORA DE FATORIAL EXATO */}
+          {activeTab === "fatorial" && (
+            <main className="glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6 animate-fadeInUp">
+              
+              <div className="border-b border-slate-700/60 pb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>🧮</span> Calculadora de Fatorial Exato (BigInt)
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Calcula $n!$ com precisão inteira perfeita, evitando arredondamentos ou estouro de memória (`Infinity`).
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="text-sm font-medium text-slate-300">Digite um número inteiro ($n$):</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fatInput}
+                    onChange={(e) => setFatInput(e.target.value)}
+                    placeholder="Ex: 50"
+                    className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-base"
+                  />
+                </div>
+                <button
+                  onClick={calcularFatorial}
+                  className="sm:self-end py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200"
+                >
+                  Calcular Fatorial
+                </button>
+              </div>
+
+              {/* Mensagem de Erro */}
+              {fatError && (
+                <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-sm font-semibold flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>{fatError}</span>
+                </div>
+              )}
+
+              {/* Resultado do Fatorial */}
+              {fatResult && (
+                <div className="bg-slate-900/90 rounded-xl p-6 border border-indigo-500/30 flex flex-col gap-4 animate-fadeInUp">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <span className="text-sm font-bold text-slate-300">
+                      Resultado para <span className="text-indigo-400 font-extrabold text-base">{fatResult.num}!</span>
+                    </span>
+                    <span className="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-semibold border border-indigo-500/30 self-start sm:self-auto">
+                      Total de dígitos: {fatResult.digitos}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 max-h-60 overflow-y-auto">
+                    <p className="font-mono text-xs text-indigo-300 break-all leading-relaxed whitespace-pre-wrap">
+                      {fatResult.valorStr}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            </main>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
