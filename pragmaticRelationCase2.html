@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pragmatic Relation & Math Case - Analisador de Assimetria 3D</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React and Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Three.js CDN for WebGL 3D Visualizations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #090d16;
+      color: #f8fafc;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Glow Lights */
+    .glow-bg-1 {
+      position: fixed;
+      top: -10%;
+      left: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: pulseGlow 10s ease-in-out infinite alternate;
+    }
+
+    .glow-bg-2 {
+      position: fixed;
+      bottom: -10%;
+      right: 10%;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.14) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: pulseGlow 12s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes pulseGlow {
+      0% { transform: scale(1) translate(0, 0); opacity: 0.7; }
+      100% { transform: scale(1.18) translate(20px, -20px); opacity: 1; }
+    }
+
+    /* Glassmorphism Styling */
+    .glass-card {
+      background: rgba(18, 26, 43, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+    }
+
+    .glass-card-interactive {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card-interactive:hover {
+      border-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Range Sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 8px;
+      cursor: pointer;
+      background: #1e293b;
+      border-radius: 9999px;
+      transition: background 0.2s;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.7);
+      transition: transform 0.15s ease;
+    }
+
+    input[type=range]:hover::-webkit-slider-thumb {
+      transform: scale(1.25);
+    }
+
+    /* Animations */
+    .animate-fadeInUp {
+      animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="relative flex flex-col items-center justify-start min-h-screen p-3 sm:p-6 lg:p-8">
+
+  <div class="glow-bg-1"></div>
+  <div class="glow-bg-2"></div>
+
+  <div id="root" class="w-full max-w-5xl z-10"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* ========================================================
+       COMPONENT: WEBGL 3D GYROSCOPE & POWER BALANCE SIMULATION
+       ======================================================== */
+    function WebGL3DBalance({ iar, financeiro, matEmocional, autonomia, protecao }) {
+      const containerRef = useRef(null);
+      const sceneRef = useRef(null);
+      const rendererRef = useRef(null);
+      const coreMeshRef = useRef(null);
+      const ringMeshRef = useRef(null);
+      const nodesGroupRef = useRef(null);
+      const isDraggingRef = useRef(false);
+      const previousMousePosition = useRef({ x: 0, y: 0 });
+      const rotationRef = useRef({ x: 0.3, y: 0.5 });
+
+      useEffect(() => {
+        if (!containerRef.current) return;
+
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight || 320;
+
+        // Scene, Camera, Renderer
+        const scene = new THREE.Scene();
+        sceneRef.current = scene;
+
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+        camera.position.set(0, 0, 11);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        rendererRef.current = renderer;
+
+        // Clear existing canvas
+        containerRef.current.innerHTML = "";
+        containerRef.current.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x6366f1, 1.2);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const pointLight = new THREE.PointLight(0xec4899, 1.5, 20);
+        pointLight.position.set(-5, -5, 5);
+        scene.add(pointLight);
+
+        // Group for interactive rotation
+        const mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+
+        // Core Equilibrium Sphere (Wireframe + Inner Glow)
+        const coreGeo = new THREE.IcosahedronGeometry(1.8, 2);
+        const coreMat = new THREE.MeshStandardMaterial({
+          color: 0x6366f1,
+          wireframe: true,
+          roughness: 0.3,
+          metalness: 0.8
+        });
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        mainGroup.add(coreMesh);
+        coreMeshRef.current = coreMesh;
+
+        // Inner solid core
+        const innerGeo = new THREE.SphereGeometry(1.1, 32, 32);
+        const innerMat = new THREE.MeshPhongMaterial({
+          color: 0x818cf8,
+          emissive: 0x312e81,
+          shininess: 100,
+          transparent: true,
+          opacity: 0.85
+        });
+        const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+        mainGroup.add(innerMesh);
+
+        // Outer Balance Ring (Giroscópio)
+        const ringGeo = new THREE.TorusGeometry(3.6, 0.08, 16, 100);
+        const ringMat = new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          metalness: 0.9,
+          roughness: 0.1
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        mainGroup.add(ringMesh);
+        ringMeshRef.current = ringMesh;
+
+        // Second intersecting ring
+        const ring2Geo = new THREE.TorusGeometry(4.2, 0.05, 16, 100);
+        const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, wireframe: true });
+        const ring2Mesh = new THREE.Mesh(ring2Geo, ring2Mat);
+        ring2Mesh.rotation.x = Math.PI / 2;
+        mainGroup.add(ring2Mesh);
+
+        // Nodes Representing Power Vectors (Grana, Maturidade, Autonomia, Proteção Legal)
+        const nodesGroup = new THREE.Group();
+        mainGroup.add(nodesGroup);
+        nodesGroupRef.current = nodesGroup;
+
+        const orbPositions = [
+          { name: "Grana", pos: [3.6, 0, 0], color: 0xeab308 },
+          { name: "Maturidade", pos: [-3.6, 0, 0], color: 0x3b82f6 },
+          { name: "Autonomia", pos: [0, 3.6, 0], color: 0x10b981 },
+          { name: "Proteção", pos: [0, -3.6, 0], color: 0xa855f7 }
+        ];
+
+        orbPositions.forEach((orb) => {
+          const sphereGeo = new THREE.SphereGeometry(0.4, 24, 24);
+          const sphereMat = new THREE.MeshStandardMaterial({ color: orb.color, roughness: 0.2 });
+          const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+          sphereMesh.position.set(...orb.pos);
+          nodesGroup.add(sphereMesh);
+
+          // Connection line to center
+          const lineMat = new THREE.LineBasicMaterial({ color: orb.color, transparent: true, opacity: 0.5 });
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(...orb.pos)
+          ]);
+          const line = new THREE.Line(lineGeo, lineMat);
+          nodesGroup.add(line);
+        });
+
+        // Orbiting particles
+        const particleGeo = new THREE.BufferGeometry();
+        const particleCount = 120;
+        const posArray = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount * 3; i++) {
+          posArray[i] = (Math.random() - 0.5) * 12;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particleMat = new THREE.PointsMaterial({
+          size: 0.05,
+          color: 0x818cf8,
+          transparent: true,
+          opacity: 0.6
+        });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        mainGroup.add(particles);
+
+        // Mouse/Touch controls for rotating 3D Object
+        const handleMouseDown = (e) => {
+          isDraggingRef.current = true;
+          previousMousePosition.current = {
+            x: e.clientX || (e.touches && e.touches[0].clientX) || 0,
+            y: e.clientY || (e.touches && e.touches[0].clientY) || 0
+          };
+        };
+
+        const handleMouseMove = (e) => {
+          if (!isDraggingRef.current) return;
+          const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+          const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+
+          const deltaX = clientX - previousMousePosition.current.x;
+          const deltaY = clientY - previousMousePosition.current.y;
+
+          rotationRef.current.y += deltaX * 0.008;
+          rotationRef.current.x += deltaY * 0.008;
+
+          previousMousePosition.current = { x: clientX, y: clientY };
+        };
+
+        const handleMouseUp = () => {
+          isDraggingRef.current = false;
+        };
+
+        const domElem = containerRef.current;
+        domElem.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        domElem.addEventListener('touchstart', handleMouseDown, { passive: true });
+        window.addEventListener('touchmove', handleMouseMove, { passive: true });
+        window.addEventListener('touchend', handleMouseUp);
+
+        // Animation Loop
+        let animationFrameId;
+        const animate = () => {
+          animationFrameId = requestAnimationFrame(animate);
+
+          // Continuous auto-rotation when not dragging
+          if (!isDraggingRef.current) {
+            rotationRef.current.y += 0.005;
+          }
+
+          mainGroup.rotation.x = rotationRef.current.x;
+          mainGroup.rotation.y = rotationRef.current.y;
+
+          particles.rotation.y -= 0.002;
+          ringMesh.rotation.z += 0.01;
+
+          renderer.render(scene, camera);
+        };
+
+        animate();
+
+        // Handle Resize
+        const handleResize = () => {
+          if (!containerRef.current) return;
+          const w = containerRef.current.clientWidth;
+          const h = containerRef.current.clientHeight || 320;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+          cancelAnimationFrame(animationFrameId);
+          window.removeEventListener('resize', handleResize);
+          domElem.removeEventListener('mousedown', handleMouseDown);
+          window.removeEventListener('mousemove', handleMouseMove);
+          window.removeEventListener('mouseup', handleMouseUp);
+          domElem.removeEventListener('touchstart', handleMouseDown);
+          window.removeEventListener('touchmove', handleMouseMove);
+          window.removeEventListener('touchend', handleMouseUp);
+          if (rendererRef.current && rendererRef.current.domElement) {
+            rendererRef.current.dispose();
+          }
+        };
+      }, []);
+
+      // Dynamic color & tilt update based on IAR score & inputs
+      useEffect(() => {
+        if (!coreMeshRef.current || !ringMeshRef.current) return;
+
+        const iarVal = iar !== null ? iar : 20;
+
+        // Color interpolation from Emerald (Low Risk) to Amber to Red (High Risk)
+        let hexColor = 0x10b981; // Green
+        if (iarVal > 30 && iarVal <= 55) {
+          hexColor = 0xf59e0b; // Amber
+        } else if (iarVal > 55 && iarVal <= 75) {
+          hexColor = 0xf97316; // Orange
+        } else if (iarVal > 75) {
+          hexColor = 0xef4444; // Red
+        }
+
+        coreMeshRef.current.material.color.setHex(hexColor);
+
+        // Tilt rings based on Financial disparity & Autonomia gap
+        const tiltX = ((Number(financeiro) - 50) / 100) * 0.8;
+        const tiltZ = ((50 - Number(autonomia)) / 100) * 0.8;
+
+        ringMeshRef.current.rotation.x = tiltX;
+        nodesGroupRef.current.rotation.z = tiltZ;
+
+      }, [iar, financeiro, matEmocional, autonomia, protecao]);
+
+      return (
+        <div className="relative w-full h-72 sm:h-80 bg-slate-950/70 rounded-2xl border border-slate-800 overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing">
+          <div ref={containerRef} className="w-full h-full" />
+          
+          {/* Overlay info tag */}
+          <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 flex items-center gap-2 pointer-events-none">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>WebGL 3D: Giroscópio de Equilíbrio Relacional</span>
+          </div>
+
+          <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur border border-slate-700/60 px-2.5 py-1 rounded text-[11px] text-slate-400 pointer-events-none">
+            Arraste com o mouse/toque para rotacionar 3D
+          </div>
+        </div>
+      );
+    }
+
+    /* ========================================================
+       MAIN APP COMPONENT
+       ======================================================== */
+    function App() {
+      // Navigation Tab State
+      const [activeTab, setActiveTab] = useState("iar"); // "iar" or "fatorial"
+
+      /* ========================================================
+         FATORIAL CALCULATOR STATE
+         ======================================================== */
+      const [fatInput, setFatInput] = useState("");
+      const [fatResult, setFatResult] = useState(null);
+      const [fatError, setFatError] = useState("");
+
+      /* ========================================================
+         PRAGMATIC POWER ASYMMETRY (IAR) EXTENDED STATE
+         ======================================================== */
+      // 1. Age Gap (0 to 100)
+      const [ageGap, setAgeGap] = useState(25);
+      
+      // 2. Disparidade Financeira / Grana (0 = Rendas equivalentes, 50 = Renda 2x a 3x maior, 100 = Sustentação unilateral/Dependência total)
+      const [financeiro, setFinanceiro] = useState("30");
+      
+      // 3. Maturidade Emocional & Experiência de Vida (0 = Ambos adultos resolvidos, 50 = Descompasso de maturidade, 100 = Função Parent-Child / Papel infantilizado)
+      const [matEmocional, setMatEmocional] = useState("20");
+
+      // 4. Autonomia Individual & Espaço Próprio (0 = Autonomia total/Saudável, 50 = Autonomia moderada, 100 = Isolamento/Sem autonomia própria)
+      const [autonomia, setAutonomia] = useState(70); // Slider: 100% Alta Autonomia -> 0% Baixa
+
+      // 5. Rede de Apoio Externa / Capital Social (0 = Ambos possuem amigos/família forte, 50 = Apenas um possui rede, 100 = Isolamento social do parceiro vulnerável)
+      const [redeApoio, setRedeApoio] = useState("0");
+
+      // 6. Regime de Bens & Proteção Jurídica em Separação/Divórcio
+      // 0 = Pacto antenupcial / Separação total de bens com reservas individuais
+      // 30 = Comunhão parcial de bens ajustada
+      // 70 = União estável informal sem contrato / contas 100% misturadas sem reserva
+      // 100 = Dependência patrimonial absoluta sem renda ou direito imediato
+      const [protecao, setProtecao] = useState("30");
+
+      // 7. Estrutura de Moradia e Dependência
+      const [moradia, setMoradia] = useState("0"); // 0 = Imóvel conjunto / aluguel dividido, 50 = Imóvel de 1 só com contribuição, 100 = Dependência de teto
+
+      // Fatores de Convivência (Sliders 0-100)
+      const [difResp, setDifResp] = useState(20);
+      const [distancia, setDistancia] = useState("0");
+      const [indifEmocional, setIndifEmocional] = useState(15);
+      const [interferencia, setInterferencia] = useState(10);
+      const [centralizacaoDecisao, setCentralizacaoDecisao] = useState(25);
+
+      // Result State
+      const [iar, setIar] = useState(null);
+      const [relatorio, setRelatorio] = useState(null);
+
+      const calcularFatorial = () => {
+        setFatError("");
+        setFatResult(null);
+
+        if (fatInput === "" || fatInput === null) {
+          setFatError("Por favor, informe um número inteiro.");
+          return;
+        }
+
+        const num = Number(fatInput);
+
+        if (!Number.isInteger(num)) {
+          setFatError("O fatorial é definido apenas para números inteiros positivos.");
+          return;
+        }
+
+        if (num < 0) {
+          setFatError("Não existe fatorial para números negativos.");
+          return;
+        }
+
+        if (num > 500) {
+          setFatError("Para preservar a resposta do seu navegador, escolha um número até 500.");
+          return;
+        }
+
+        let resultado = 1n;
+        for (let i = 2n; i <= BigInt(num); i++) {
+          resultado *= i;
+        }
+
+        const resStr = resultado.toString();
+        setFatResult({
+          num,
+          valorStr: resStr,
+          digitos: resStr.length
+        });
+      };
+
+      const calcularIAR = () => {
+        const valAgeGap = Number(ageGap);
+        const valFinanceiro = Number(financeiro);
+        const valMatEmocional = Number(matEmocional);
+        const valAutonomiaGap = 100 - Number(autonomia); // Converter para fator de risco
+        const valRedeApoio = Number(redeApoio);
+        const valProtecao = Number(protecao);
+        const valMoradia = Number(moradia);
+        const valDifResp = Number(difResp);
+        const valDistancia = Number(distancia);
+
+        const mediaSecundarios = (
+          Number(indifEmocional) +
+          Number(interferencia) +
+          Number(centralizacaoDecisao)
+        ) / 3;
+
+        // PESOS REVISADOS (Soma = 1.00)
+        // Disparidade Financeira (Grana): 18%
+        // Falta de Autonomia Individual: 16%
+        // Descompasso de Maturidade Emocional: 15%
+        // Idade (Age Gap): 10% (Pragmatismo: Age gap é apenas um dos fatores, não o único)
+        // Vulnerabilidade Legal em Divórcio/Separação: 12%
+        // Isolamento de Rede de Apoio: 10%
+        // Dependência de Moradia: 8%
+        // Divergência de Responsabilidades/Distância: 6%
+        // Fatores Secundários de Convivência: 5%
+        const iarCalc = (
+          0.18 * valFinanceiro +
+          0.16 * valAutonomiaGap +
+          0.15 * valMatEmocional +
+          0.10 * valAgeGap +
+          0.12 * valProtecao +
+          0.10 * valRedeApoio +
+          0.08 * valMoradia +
+          0.06 * (valDifResp + valDistancia) / 2 +
+          0.05 * mediaSecundarios
+        );
+
+        const iarArredondado = Math.round(iarCalc * 10) / 10;
+        setIar(iarArredondado);
+
+        // RECOMENDAÇÕES PRAGMÁTICAS E ORIENTAÇÕES PRÁTICAS
+        let status = "";
+        let badgeColor = "";
+        let barGradient = "";
+        let conselhosPragmaticos = [];
+        let guiaAutonomia = "";
+        let cuidadosDivorcio = [];
+
+        if (iarArredondado <= 25) {
+          status = "Alta Simetria & Equilíbrio Pragmatico";
+          badgeColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+          barGradient = "from-emerald-500 to-teal-400";
+          conselhosPragmaticos = [
+            "Manter alinhamentos mensais sobre orçamento comum e objetivos de carreira independentes.",
+            "Continuar fomentando hobbies, círculos de amizades e projetos profissionais individuais.",
+            "Dividir gastos proporcionalmente à renda de cada um para preservar a capacidade de poupança individual."
+          ];
+          guiaAutonomia = "Sua relação demonstra forte independência mútua. Lembre-se: o verdadeiro amor floresce entre dois indivíduos inteiros, não entre metades dependentes.";
+          cuidadosDivorcio = [
+            "Manter clareza sobre o regime de bens escolhido e atualizar inventário de bens se necessário.",
+            "Preservar contas bancárias individuais além da conta conjunta da casa."
+          ];
+        } else if (iarArredondado <= 50) {
+          status = "Assimetria Leve a Moderada (Ajustes de Autonomia)";
+          badgeColor = "bg-yellow-500/20 text-yellow-300 border-yellow-500/40";
+          barGradient = "from-yellow-400 to-amber-500";
+          conselhosPragmaticos = [
+            "Adequar a divisão de custos financeiros (% sobre o ganho real net) e não 50/50 fixo se as rendas forem díspares.",
+            "Evitar que o parceiro que ganha mais tome todas as decisões de consumo ou viagens sozinho.",
+            "Investir no amadurecimento emocional do casal por meio de comunicação não violenta sem dinâmicas de cobrança estilo 'mãe/pai'."
+          ];
+          guiaAutonomia = "Aumente a autonomia do parceiro com menor poder financeiro ou emocional. Incentivar cursos, empregabilidade e momentos de lazer individual fortalece a estabilidade do casal.";
+          cuidadosDivorcio = [
+            "Evitar que um dos parceiros abra mão de sua carreira ou estudos permanentemente para cuidar apenas da casa sem compensação contratual.",
+            "Garantir reserva de emergência individual equivalente a pelo menos 3 a 6 meses de custo de vida."
+          ];
+        } else if (iarArredondado <= 75) {
+          status = "Assimetria Elevada (Risco de Controle e Dependência)";
+          badgeColor = "bg-orange-500/20 text-orange-300 border-orange-500/40";
+          barGradient = "from-amber-500 to-orange-600";
+          conselhosPragmaticos = [
+            "Desmistificar a diferença de idade: focar no verdadeiro gargalo, que é a dependência de renda e o controle de decisões.",
+            "Abolir qualquer controle financeiro abusivo (ex: ter que pedir permissão ou prestar contas de compras cotidianas).",
+            "Estabelecer um orçamento pessoal intocável para cada um, independentemente de quem contribui mais."
+          ];
+          guiaAutonomia = "A autonomia deve ser tratada como prioridade urgente. Se você depende do outro para moradia ou despesas, trace um plano de 6 a 12 meses para conquistar renda própria ou independência de decisões.";
+          cuidadosDivorcio = [
+            "Formalizar a união com contrato escrito (separação de bens com cláusula de proteção ou comunhão com regras claras).",
+            "Manter documentos pessoais, comprovantes de renda e histórico bancário sob acesso individual.",
+            "Em caso de dissolução, buscar mediação jurídica neutra para evitar chantagem emocional baseada no poder econômico."
+          ];
+        } else {
+          status = "Assimetria Extrema (Alto Risco de Vulnerabilidade)";
+          badgeColor = "bg-red-600/25 text-red-300 border-red-500/50";
+          barGradient = "from-rose-600 to-red-700";
+          conselhosPragmaticos = [
+            "Construir urgentemente uma rede de apoio externa (reativar contato com família, amigos e profissionais de confiança).",
+            "Romper a dinâmica de 'Parentalização': relacionamentos adultos exijam reciprocidade, não submissão ou tutela emocional.",
+            "Garantir liquidez financeira própria imediatamente. Ficar em uma relação por impossibilidade financeira de sair é extremamente nocivo."
+          ];
+          guiaAutonomia = "Sua autonomia individual está severamente comprometida. A prioridade absoluta deve ser recuperar o controle sobre suas finanças, sua vida social e sua capacidade de tomada de decisão.";
+          cuidadosDivorcio = [
+            "Consultar um advogado especializado em Direito de Família antes de tomar decisões impulsivas.",
+            "Mapear todos os bens do casal (imóveis, contas, investimentos) para evitar ocultação de patrimônio em eventual divórcio.",
+            "Assegurar suporte psicológico e jurídico preventivo para garantir a integridade e custódia/suporte se houver filhos."
+          ];
+        }
+
+        setRelatorio({
+          status,
+          badgeColor,
+          barGradient,
+          conselhosPragmaticos,
+          guiaAutonomia,
+          cuidadosDivorcio
+        });
+      };
+
+      return (
+        <div className="flex flex-col gap-6 w-full">
+          
+          {}
+          {/* HEADER PRINCIPAL */}
+          <header className="glass-card rounded-2xl p-6 sm:p-8 text-center flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl"></div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3">
+              <span>Análise Pragmática & Computação Matemática</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-indigo-200">
+              Pragmatic Relation & Math Case
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-base max-w-2xl mt-2">
+              Avaliação pragmática da dinâmica de poder, autonomia financeira, maturidade emocional e segurança jurídica no relacionamento + Calculadora Fatorial de alta precisão.
+            </p>
+
+            {/* ABA DE NAVEGAÇÃO */}
+            <div className="flex items-center justify-center p-1.5 bg-slate-900/80 border border-slate-700/60 rounded-xl mt-6 w-full max-w-md gap-2">
+              <button
+                onClick={() => setActiveTab("iar")}
+                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  activeTab === "iar"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                }`}
+              >
+                <span>⚖️</span>
+                <span>Assimetria 3D (IAR)</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("fatorial")}
+                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  activeTab === "fatorial"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                }`}
+              >
+                <span>🧮</span>
+                <span>Calculadora Fatorial</span>
+              </button>
+            </div>
+          </header>
+
+          {}
+          {/* ABA 1: MEDIDOR PRAGMÁTICO DE ASSIMETRIA 3D */}
+          {activeTab === "iar" && (
+            <main className="flex flex-col gap-6 animate-fadeInUp">
+              
+              {/* CANVAS WEBGL 3D VIEWPORT */}
+              <WebGL3DBalance
+                iar={iar}
+                financeiro={financeiro}
+                matEmocional={matEmocional}
+                autonomia={autonomia}
+                protecao={protecao}
+              />
+
+              <section className="glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
+                <div className="border-b border-slate-700/60 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <span>📊</span> Vetores Pragmáticos da Dinâmica de Poder
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      O Age Gap não é o único vetor. Renda, maturidade emocional, autonomia e proteção jurídica definem a sustentabilidade real do vínculo.
+                    </p>
+                  </div>
+                </div>
+
+                {/* GRID DE PARÂMETROS AMPLIADOS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* 1. Age Gap */}
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                        <span>⏳</span> Age Gap (Diferença de Idade):
+                      </label>
+                      <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                        {ageGap}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={ageGap}
+                      onChange={(e) => setAgeGap(e.target.value)}
+                    />
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Idades próximas</span>
+                      <span>Diferença acentuada</span>
+                    </div>
+                  </div>
+
+                  {/* 2. Disparidade Financeira / Grana */}
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                      <span>💵</span> Disparidade Financeira (Grana):
+                    </label>
+                    <select
+                      value={financeiro}
+                      onChange={(e) => setFinanceiro(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Ambos têm rendas equivalentes / Autonomia total</option>
+                      <option value="30">Um parceiro ganha até 2x mais (Divisão harmoniosa)</option>
+                      <option value="70">Um parceiro ganha 4x+ mais (Disparidade de consumo)</option>
+                      <option value="100">Apenas UM sustenta totalmente o outro (Dependência)</option>
+                    </select>
+                  </div>
+
+                  {/* 3. Maturidade Emocional & Experiência de Vida */}
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                      <span>🧠</span> Maturidade Emocional & Resiliência:
+                    </label>
+                    <select
+                      value={matEmocional}
+                      onChange={(e) => setMatEmocional(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Maturidade equivalente / Ambos gerenciam crises</option>
+                      <option value="40">Ligeiro descompasso no manejo de conflitos</option>
+                      <option value="70">Grande lacuna de experiência de vida</option>
+                      <option value="100">Dinâmica de 'Parentalização' (Um age como pai/mãe)</option>
+                    </select>
+                  </div>
+
+                  {/* 4. Regime de Bens & Proteção Jurídica (Divórcio / Separação) */}
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                      <span>📜</span> Proteção Jurídica & Regime de Bens:
+                    </label>
+                    <select
+                      value={protecao}
+                      onChange={(e) => setProtecao(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Pacto Antenupcial / Separação Total com Reservas</option>
+                      <option value="30">Comunhão Parcial de Bens formalizada</option>
+                      <option value="70">União Estável informal sem contrato estipulado</option>
+                      <option value="100">Sem contrato e sem reserva individual em caso de término</option>
+                    </select>
+                  </div>
+
+                  {/* 5. Rede de Apoio Externa / Capital Social */}
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                      <span>👥</span> Rede de Apoio Externa (Família/Amigos):
+                    </label>
+                    <select
+                      value={redeApoio}
+                      onChange={(e) => setRedeApoio(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Ambos possuem amigos e família ativos</option>
+                      <option value="50">Apenas um parceiro possui suporte social forte</option>
+                      <option value="100">Um dos lados está isolado da rede de apoio</option>
+                    </select>
+                  </div>
+
+                  {/* 6. Coabitação & Dependência de Teto */}
+                  <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                      <span>🏠</span> Moradia & Teto:
+                    </label>
+                    <select
+                      value={moradia}
+                      onChange={(e) => setMoradia(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="0">Imóvel alugado/comprado conjuntamente</option>
+                      <option value="50">Imóvel próprio de um lado (Com contribuição)</option>
+                      <option value="100">Dependência total do imóvel do outro parceiro</option>
+                    </select>
+                  </div>
+
+                </div>
+
+                {/* SLIDER 7: Autonomia Individual */}
+                <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex flex-col gap-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                      <span>🕊️</span> Nível de Autonomia e Liberdade Individual:
+                    </label>
+                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      {autonomia}% (Autonomia)
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={autonomia}
+                    onChange={(e) => setAutonomia(e.target.value)}
+                  />
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>Sem autonomia (Dependência)</span>
+                    <span>Autonomia Plena & Escolha</span>
+                  </div>
+                </div>
+
+                {/* BLOCO DE FATORES ADICIONAIS DE CONVIVÊNCIA */}
+                <div className="mt-4 pt-4 border-t border-slate-700/60 flex flex-col gap-4">
+                  <h3 className="text-md font-semibold text-slate-200 flex items-center gap-2">
+                    <span>🧩</span> Indicadores de Convivência e Alinhamento
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    
+                    {/* Divergência de Responsabilidades */}
+                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Desalinhamento de Carreira:</span>
+                        <span className="text-indigo-400 font-bold">{difResp}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={difResp} onChange={(e) => setDifResp(e.target.value)} />
+                    </div>
+
+                    {/* Centralização de Decisões */}
+                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Centralização de Decisão:</span>
+                        <span className="text-indigo-400 font-bold">{centralizacaoDecisao}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={centralizacaoDecisao} onChange={(e) => setCentralizacaoDecisao(e.target.value)} />
+                    </div>
+
+                    {/* Frieza / Indiferença */}
+                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">Indiferença Emocional:</span>
+                        <span className="text-indigo-400 font-bold">{indifEmocional}%</span>
+                      </div>
+                      <input type="range" min="0" max="100" value={indifEmocional} onChange={(e) => setIndifEmocional(e.target.value)} />
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Botão de Cálculo */}
+                <button
+                  onClick={calcularIAR}
+                  className="mt-2 w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 text-base"
+                >
+                  <span>⚡</span>
+                  <span>Calcular Índice IAR & Gerar Diagnóstico Pragmático 3D</span>
+                </button>
+              </section>
+
+              {}
+              {/* CARD DE RELATÓRIO E CONSELHOS PRAGMÁTICOS */}
+              {iar !== null && relatorio && (
+                <section className="glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6 animate-fadeInUp border-indigo-500/30">
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-4">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Diagnóstico da Dinâmica de Poder</span>
+                      <h3 className="text-2xl font-bold text-white mt-1">
+                        IAR Calculado: <span className="text-indigo-400">{iar}</span> / 100
+                      </h3>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold border ${relatorio.badgeColor} self-start sm:self-auto`}>
+                      {relatorio.status}
+                    </span>
+                  </div>
+
+                  {/* Barra Visual Proporcional */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between text-xs text-slate-400 font-semibold">
+                      <span>Simétrico (0)</span>
+                      <span>Assimetria Moderada (50)</span>
+                      <span>Extrema Vulnerabilidade (100)</span>
+                    </div>
+                    <div className="w-full h-4 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${relatorio.barGradient} transition-all duration-700 ease-out`}
+                        style={{ width: `${Math.min(Math.max(iar, 3), 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* GUIA DE AUTONOMIA CENTRAL */}
+                  <div className="bg-emerald-950/40 rounded-xl p-5 border border-emerald-500/30 flex flex-col gap-2">
+                    <h4 className="text-md font-bold text-emerald-300 flex items-center gap-2">
+                      <span>🕊️</span> O Papel Fundamental da Autonomia Individual:
+                    </h4>
+                    <p className="text-sm text-emerald-100 leading-relaxed">
+                      {relatorio.guiaAutonomia}
+                    </p>
+                  </div>
+
+                  {/* CONSELHOS PRAGMÁTICOS */}
+                  <div className="bg-slate-900/80 rounded-xl p-5 border border-slate-800 flex flex-col gap-4">
+                    <h4 className="text-md font-bold text-slate-100 flex items-center gap-2">
+                      <span>💡</span> Conselhos Práticos para Equilíbrio da Grana e Convivência:
+                    </h4>
+                    
+                    <ul className="flex flex-col gap-2.5">
+                      {relatorio.conselhosPragmaticos.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm text-slate-300 bg-slate-800/40 p-3 rounded-lg border border-slate-700/30">
+                          <span className="flex-shrink-0 text-indigo-400 font-bold">✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* CUIDADOS COM DIVÓRCIO E SEPARAÇÃO */}
+                  <div className="bg-slate-900/80 rounded-xl p-5 border border-slate-800 flex flex-col gap-4">
+                    <h4 className="text-md font-bold text-amber-300 flex items-center gap-2">
+                      <span>⚖️</span> Cuidados Preventivos sobre Separação, Divórcio e Proteção de Patrimônio:
+                    </h4>
+                    
+                    <ul className="flex flex-col gap-2.5">
+                      {relatorio.cuidadosDivorcio.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm text-slate-300 bg-amber-500/5 p-3 rounded-lg border border-amber-500/20">
+                          <span className="flex-shrink-0 text-amber-400 font-bold">🛡️</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <p className="text-xs text-slate-500 italic text-center">
+                    * Nota Pragmática: O cálculo do IAR e o modelo 3D constituem uma ferramenta analítica de apoio à tomada de decisão racional, sem caráter de parecer jurídico ou psicológico vinculante.
+                  </p>
+                </section>
+              )}
+
+            </main>
+          )}
+
+          {}
+          {/* ABA 2: CALCULADORA DE FATORIAL DE ALTA PRECISÃO */}
+          {activeTab === "fatorial" && (
+            <main className="glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6 animate-fadeInUp">
+              
+              <div className="border-b border-slate-700/60 pb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>🧮</span> Calculadora de Fatorial Exato (BigInt)
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Calcula $n!$ com precisão de dígitos inteiros sem perdas de ponto flutuante ou estouro `Infinity`.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="text-sm font-medium text-slate-300">Digite um número inteiro ($n$):</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fatInput}
+                    onChange={(e) => setFatInput(e.target.value)}
+                    placeholder="Ex: 50"
+                    className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors text-base"
+                  />
+                </div>
+                <button
+                  onClick={calcularFatorial}
+                  className="sm:self-end py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200"
+                >
+                  Calcular Fatorial
+                </button>
+              </div>
+
+              {fatError && (
+                <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-sm font-semibold flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>{fatError}</span>
+                </div>
+              )}
+
+              {fatResult && (
+                <div className="bg-slate-900/90 rounded-xl p-6 border border-indigo-500/30 flex flex-col gap-4 animate-fadeInUp">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <span className="text-sm font-bold text-slate-300">
+                      Resultado para <span className="text-indigo-400 font-extrabold text-base">{fatResult.num}!</span>
+                    </span>
+                    <span className="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-semibold border border-indigo-500/30 self-start sm:self-auto">
+                      Total de dígitos: {fatResult.digitos}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 max-h-60 overflow-y-auto">
+                    <p className="font-mono text-xs text-indigo-300 break-all leading-relaxed whitespace-pre-wrap">
+                      {fatResult.valorStr}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            </main>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
