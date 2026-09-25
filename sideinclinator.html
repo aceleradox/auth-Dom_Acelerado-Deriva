@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antimoralism Side Inclinator</title>
+    <!-- Incluindo Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos personalizados básicos */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 - Fundo escuro */
+            color: #f8fafc; /* Slate 50 - Texto claro */
+        }
+        
+        /* Efeito de brilho neon sutil para o título */
+        .neon-text {
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+            color: #c4b5fd; /* Violet 300 */
+        }
+
+        /* Estilização da barra de rolagem para combinar com o tema escuro */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; /* Slate 800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; /* Slate 600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* Slate 500 */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-3xl w-full bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+        
+        <!-- Cabeçalho do App -->
+        <header class="bg-slate-900 p-6 text-center border-b border-slate-700 relative overflow-hidden">
+            <!-- Decoração de fundo sutil -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500"></div>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight neon-text mb-2">
+                Antimoralism Side Inclinator
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto">
+                Desfragmente palavras ou frases (separadas por vírgula) para criar filtros que evitam a detecção automática e a desaprovação.
+            </p>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="p-6 md:p-8 space-y-8">
+            
+            <!-- Seção de Entrada -->
+            <section class="space-y-5">
+                <div>
+                    <label for="input-keywords" class="block text-sm font-semibold text-slate-300 mb-2">
+                        Palavras/Frases para Censurar (separadas por vírgula):
+                    </label>
+                    <textarea 
+                        id="input-keywords" 
+                        rows="3" 
+                        class="w-full bg-slate-950 border border-slate-600 rounded-lg p-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 placeholder-slate-500"
+                        placeholder="Ex: moralmente errado, inaceitavel"
+                    ></textarea>
+                    <p class="text-xs text-slate-500 mt-2">Dica: Use vírgulas estritamente para separar os termos que deseja desfragmentar.</p>
+                </div>
+
+                <div>
+                    <label for="input-interval" class="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                        Letras por bloco (Evita censura de letras isoladas):
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <input 
+                            type="number" 
+                            id="input-interval" 
+                            min="2" 
+                            max="10" 
+                            value="3"
+                            class="w-24 bg-slate-950 border border-slate-600 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-center"
+                        >
+                        <span class="text-sm text-slate-400">Recomendado: 3 ou 4</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Agrupa as letras em blocos maiores para que filtros da rede social não bloqueiem letras como "a" ou "m" por estarem sozinhas.</p>
+                </div>
+            </section>
+
+            <!-- Ações -->
+            <div class="flex justify-center">
+                <button 
+                    id="btn-process" 
+                    class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-violet-500/30 transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0 flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                    </svg>
+                    Gerar Filtros
+                </button>
+            </div>
+
+            <!-- Área de Resultados (Oculta inicialmente) -->
+            <div id="results-area" class="hidden space-y-6">
+                <!-- Linha divisória -->
+                <div class="h-px bg-slate-700 w-full"></div>
+
+                <!-- Dicionário Gerado e Exportação -->
+                <section class="space-y-4">
+                    <h2 class="text-lg font-semibold text-slate-200">Filtros Gerados</h2>
+                    
+                    <!-- Área de visualização detalhada -->
+                    <div class="bg-slate-900/50 border border-slate-700/50 rounded-lg p-4">
+                        <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-3 font-semibold">Detalhes da Desfragmentação</h3>
+                        <div id="output-dictionary" class="space-y-2 text-sm"></div>
+                    </div>
+
+                    <!-- Área de Exportação (Para Redes Sociais) -->
+                    <div class="bg-slate-800 border border-slate-600 rounded-xl p-5 shadow-inner">
+                        <h3 class="text-md font-semibold text-emerald-400 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            Pronto para Redes Sociais
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-3">Copie o conteúdo abaixo e cole diretamente na área de "Palavras Ocultas" ou "Filtro de Comentários" da sua rede social.</p>
+                        
+                        <textarea 
+                            id="export-filters" 
+                            readonly 
+                            rows="2" 
+                            class="w-full bg-slate-950 border border-slate-500 rounded-lg p-3 text-emerald-300 font-mono text-sm mb-4 focus:outline-none"
+                        ></textarea>
+                        
+                        <!-- Botões responsivos (empilham no mobile, lado a lado no PC) -->
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button 
+                                onclick="copyFiltersToClipboard()" 
+                                class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-violet-900/20"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                                Copiar Filtros (Redes Sociais)
+                            </button>
+                            <button 
+                                onclick="downloadFilters()" 
+                                class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 px-4 rounded-lg border border-slate-500 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Baixar (.txt)
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Testador de Texto -->
+                <section class="bg-slate-800 border border-slate-600 rounded-xl p-5 shadow-inner">
+                    <h3 class="text-md font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Testar Filtro (Opcional)
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-3">Cole um texto abaixo para ver como os termos desfragmentados são aplicados (substituindo as palavras originais).</p>
+                    
+                    <textarea 
+                        id="test-text" 
+                        rows="3" 
+                        class="w-full bg-slate-950 border border-slate-600 rounded-lg p-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-500 mb-3 text-sm"
+                        placeholder="Ex: Isso é legalmente aceito mas moralmente errado, um ato inaceitável."
+                    ></textarea>
+                    
+                    <button 
+                        id="btn-apply-filter" 
+                        class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-2 rounded transition-colors text-sm font-medium border border-slate-600"
+                    >
+                        Aplicar Filtros no Texto Acima
+                    </button>
+
+                    <!-- Resultado do Teste -->
+                    <div id="test-result-container" class="mt-4 hidden">
+                         <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Resultado:</span>
+                            <button onclick="copyToClipboard('test-result')" class="text-slate-400 hover:text-white text-xs flex items-center gap-1 transition-colors">
+                                Copiar
+                            </button>
+                        </div>
+                        <div id="test-result" class="bg-slate-900 border border-slate-700 rounded p-3 text-sm text-slate-300 whitespace-pre-wrap"></div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Notificação Toast (Flutuante) -->
+            <div id="toast" class="fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span id="toast-message">Copiado!</span>
+            </div>
+
+        </main>
+        
+        <!-- Rodapé -->
+        <footer class="bg-slate-900 border-t border-slate-800 p-4 text-center">
+            <p class="text-slate-500 text-xs">Antimoralism Side Inclinator &copy; 2026 - Uso por sua conta e risco.</p>
+        </footer>
+    </div>
+
+    <!-- Lógica JavaScript -->
+    <script>
+        // Elementos da DOM
+        const inputKeywords = document.getElementById('input-keywords');
+        const btnProcess = document.getElementById('btn-process');
+        const resultsArea = document.getElementById('results-area');
+        const outputDictionary = document.getElementById('output-dictionary');
+        const exportFilters = document.getElementById('export-filters');
+        
+        const testText = document.getElementById('test-text');
+        const btnApplyFilter = document.getElementById('btn-apply-filter');
+        const testResultContainer = document.getElementById('test-result-container');
+        const testResult = document.getElementById('test-result');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const inputInterval = document.getElementById('input-interval');
+
+        // Armazena o mapeamento atual de original -> fragmentado
+        let currentDictionary = {};
+
+        /**
+         * Lógica principal para desfragmentar uma string inserindo vírgulas e espaços
+         * baseada no comprimento especificado, evitando letras isoladas.
+         */
+        function fragmentString(str, interval) {
+            // Remove espaços extras nas pontas
+            str = str.trim();
+            if (str.length <= interval) return str; 
+
+            let result = [];
+            let currentChunk = "";
+            let lettersInChunk = 0;
+
+            for (let i = 0; i < str.length; i++) {
+                currentChunk += str[i];
+                
+                // Conta apenas letras/números (ignora espaços) para o limite do bloco
+                if (str[i] !== ' ') {
+                    lettersInChunk++;
+                }
+
+                // Quando atingir o intervalo, salva o bloco e reseta a contagem
+                if (lettersInChunk === interval) {
+                    result.push(currentChunk);
+                    currentChunk = "";
+                    lettersInChunk = 0;
+                }
+            }
+
+            // Trata o restante da string que não completou um bloco inteiro
+            if (currentChunk.length > 0) {
+                let lastLetters = 0;
+                for (let char of currentChunk) {
+                    if (char !== ' ') lastLetters++;
+                }
+
+                // Se sobrar apenas 1 letra e já tivermos blocos, juntamos ao bloco anterior
+                // para evitar que fique uma letra isolada (ex: "m," ou "a,")
+                if (lastLetters === 1 && result.length > 0) {
+                    result[result.length - 1] += currentChunk;
+                } else if (lastLetters > 0) {
+                    result.push(currentChunk);
+                }
+            }
+
+            // Junta os blocos criados usando uma vírgula + espaço para melhor mascaramento
+            return result.join(", ");
+        }
+
+        btnProcess.addEventListener('click', () => {
+            const rawInput = inputKeywords.value;
+            let interval = parseInt(inputInterval.value, 10);
+            
+            // Validação do intervalo
+            if (isNaN(interval) || interval < 2) {
+                interval = 2; // Força mínimo de 2 para segurança
+                inputInterval.value = 2;
+            }
+
+            if (!rawInput.trim()) {
+                showToast("Por favor, insira alguma palavra ou frase.", true);
+                return;
+            }
+
+            // Limpa o dicionário atual
+            currentDictionary = {};
+            
+            // Separa por vírgula e remove espaços extras
+            const terms = rawInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
+            
+            if (terms.length === 0) {
+                 showToast("Nenhum termo válido encontrado.", true);
+                 return;
+            }
+
+            let displayHTML = "";
+            let exportedWordsArray = [];
+
+            // Processa cada termo e os adiciona na interface
+            terms.forEach(term => {
+                const fragmented = fragmentString(term, interval);
+                
+                // 1. Salva no dicionário para a função de teste
+                currentDictionary[term] = fragmented;
+                
+                // 2. Adiciona na lista visual de Detalhes
+                displayHTML += `
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-slate-700/50 last:border-0 gap-1">
+                        <span class="text-slate-400 truncate pr-2 text-xs sm:text-sm" title="${term}">${term}</span>
+                        <span class="text-violet-300 font-mono font-medium text-sm break-all">${fragmented}</span>
+                    </div>
+                `;
+                
+                // 3. Adiciona na array que será enviada para o campo de Exportação
+                exportedWordsArray.push(fragmented);
+            });
+
+            // Atualiza a UI
+            outputDictionary.innerHTML = displayHTML.trim();
+            exportFilters.value = exportedWordsArray.join(', ');
+            resultsArea.classList.remove('hidden');
+            
+            // Rola suavemente para os resultados
+            resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Limpa o teste anterior se houver
+            testResultContainer.classList.add('hidden');
+            testResult.innerHTML = "";
+            
+            showToast("Filtros gerados com sucesso!");
+        });
+
+        btnApplyFilter.addEventListener('click', () => {
+            let text = testText.value;
+            
+            if (!text.trim()) {
+                showToast("Insira um texto para testar.", true);
+                return;
+            }
+            
+            if (Object.keys(currentDictionary).length === 0) {
+                showToast("Gere os filtros primeiro.", true);
+                return;
+            }
+
+            // Aplicar as substituições
+            // Ordenamos as chaves por comprimento decrescente para evitar
+            // que uma palavra curta substitua parte de uma frase mais longa antes.
+            const sortedKeys = Object.keys(currentDictionary).sort((a, b) => b.length - a.length);
+
+            sortedKeys.forEach(originalTerm => {
+                const fragmentedTerm = currentDictionary[originalTerm];
+                
+                // Criar uma expressão regular global e ignorando maiúsculas/minúsculas (i)
+                // O \b é limite de palavra, mas como pode ter espaços na frase original, 
+                // vamos fazer uma substituição mais simples global primeiro.
+                // Para evitar substituir dentro de outras palavras acidentalmente, 
+                // uma abordagem mais robusta seria necessária, mas para este MVP, 
+                // a substituição global de string atende.
+                
+                // Escapa caracteres especiais de regex se existirem na string original
+                const escapedOriginal = originalTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedOriginal, 'gi');
+                
+                // Usamos uma classe do tailwind para destacar a alteração no texto final
+                const highlightedFragment = `<span class="bg-violet-900/50 text-violet-200 px-1 rounded border border-violet-700/50">${fragmentedTerm}</span>`;
+                
+                text = text.replace(regex, highlightedFragment);
+            });
+
+            // Atualiza a UI com o resultado
+            testResult.innerHTML = text;
+            testResultContainer.classList.remove('hidden');
+            
+            // Se o texto original não foi alterado, avisa o usuário
+            if (text === testText.value) {
+                showToast("Nenhuma correspondência encontrada no texto.", true);
+            }
+        });
+
+        // Novas funções para copiar e baixar os filtros brutos
+        function copyFiltersToClipboard() {
+            const textToCopy = exportFilters.value;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast("Filtros copiados para a área de transferência!");
+                }).catch(err => {
+                    fallbackCopyTextToClipboard(textToCopy);
+                });
+            } else {
+                fallbackCopyTextToClipboard(textToCopy);
+            }
+        }
+
+        function downloadFilters() {
+            const textToDownload = exportFilters.value;
+            if (!textToDownload) return;
+
+            const blob = new Blob([textToDownload], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'filtros-antimoralism.txt';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showToast("Download iniciado!");
+        }
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            let textToCopy = "";
+            
+            if (elementId === 'test-result') {
+                // Se for o resultado do texto, pega o textContent para ignorar as tags HTML (<span>)
+                textToCopy = el.textContent || el.innerText;
+            } else {
+                 textToCopy = el.innerText;
+            }
+
+            // Tenta usar a API moderna da área de transferência primeiro
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast("Copiado para a área de transferência!");
+                }).catch(err => {
+                    fallbackCopyTextToClipboard(textToCopy);
+                });
+            } else {
+                fallbackCopyTextToClipboard(textToCopy);
+            }
+        }
+
+        // Método de fallback para navegadores antigos ou iFrames
+        function fallbackCopyTextToClipboard(text) {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Evita scroll na página ao focar no textarea
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    showToast("Copiado com sucesso!");
+                } else {
+                    showToast("Falha ao copiar.", true);
+                }
+            } catch (err) {
+                showToast("Erro ao copiar.", true);
+                console.error('Fallback: Erro ao copiar', err);
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        // Função para mostrar notificação (Toast)
+        function showToast(message, isError = false) {
+            toastMessage.textContent = message;
+            
+            // Altera cores baseado no tipo
+            if (isError) {
+                toast.classList.remove('bg-emerald-600');
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.remove('bg-red-600');
+                toast.classList.add('bg-emerald-600');
+            }
+
+            // Animação de entrada
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            // Oculta após 3 segundos
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+    </script>
+</body>
+</html>
