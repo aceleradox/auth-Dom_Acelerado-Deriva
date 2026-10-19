@@ -110,6 +110,7 @@
     color:#e7dfc2; margin:10px 0;
   }
   .manual .note.err{border-left-color:var(--red); background:#1a0d0d; color:#f5c2c2;}
+  .manual .note.fix{border-left-color:var(--pink); background:#1a0e14; color:#f5c9da;}
   .table{width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:12px;}
   .table th,.table td{
     border:1px solid var(--line); padding:6px 8px; text-align:left;
@@ -146,12 +147,13 @@
 <section id="manual" class="panel manual">
 
   <h2>1 · RothBard IDE</h2>
-  <p>Ambiente forense que compara <b>poder de decisão</b> entre dois prefixos sem usar idade.
-  Mede <b>capacidade</b> (0x0227) contra <b>recurso</b> (0x0228), e verifica a governança do vínculo (<code>agap</code>).</p>
+  <p>Ambiente forense que mede <b>comando efetivo</b> — não quantidade de flags.
+  <code>parentalAllow=true</code>, <code>school=true</code> e <code>autonomy=false</code> são <b>restrições</b>, não capacidades.
+  O sistema calcula: <b>capacidade nominal − penalidades = comando efetivo</b>.</p>
 
   <h2>2 · Prefixos</h2>
   <div class="wrap"><table class="table">
-    <tr><th>Prefixo</th><th>Significado</th></tr>
+    <tr><th>Prefixo</th><th>O que significa</th></tr>
     <tr><td>0x0227</td><td>sob autoridade parental · estudante · trabalho limitado</td></tr>
     <tr><td>0x0228</td><td>autonomia total · emprego · salário · contas</td></tr>
   </table></div>
@@ -163,10 +165,13 @@
   <h3>3.1 · 0x0227 — capacidade (7)</h3>
   <p><code>autonomy</code>, <code>discerniment</code>, <code>maturity</code>, <code>consent</code>, <code>legalCapacity</code>, <code>financialLiteracy</code>, <code>digitalLiteracy</code></p>
 
-  <h3>3.2 · 0x0227 — suporte (5)</h3>
+  <h3>3.2 · 0x0227 — suporte (contexto, não soma poder)</h3>
   <p><code>family</code>, <code>parentalAllow</code>, <code>emotionalSupport</code>, <code>safetyNet</code>, <code>health</code></p>
+  <div class="note err">
+    <b>Correção conceitual:</b> <code>parentalAllow=true</code> NÃO é capacidade — é <b>restrição</b>. Significa que a pessoa precisa de permissão. Reduz o comando efetivo.
+  </div>
 
-  <h3>3.3 · 0x0227 — educação (3)</h3>
+  <h3>3.3 · 0x0227 — educação (contexto)</h3>
   <p><code>school</code>, <code>workPermit</code>, <code>educationPath</code></p>
 
   <h3>3.4 · 0x0228 — recursos (7)</h3>
@@ -178,115 +183,86 @@
   <h3>3.6 · agap — governança (10)</h3>
   <p><code>coabitation</code>, <code>emancipation</code>, <code>powerBalance</code>, <code>consentDocumented</code>, <code>reviewPeriod</code>, <code>exitStrategy</code>, <code>thirdPartyArbiter</code>, <code>writtenContract</code>, <code>transparencyLog</code>, <code>conflictResolution</code></p>
 
-<pre><b>young</b>.set(
-  school=<u>true</u>, family=<u>true</u>, maturity=<u>true</u>,
-  parentalAllow=<u>true</u>, autonomy=<u>false</u>, discerniment=<u>false</u>,
-  consent=<u>true</u>, legalCapacity=<u>false</u>, health=<u>true</u>
-)
-<b>old</b>.set(
-  job=<u>true</u>, salary=<u>true</u>, travel=<u>true</u>,
-  accounts=<u>true</u>, savings=<u>false</u>, insurance=<u>true</u>
-)</pre>
+  <h2>4 · Cálculo de comando efetivo</h2>
 
-  <h2>4 · Métodos de prefixo</h2>
+  <h3>4.1 · 0x0227</h3>
+<pre>capacidade nominal = (autonomy + discerniment + maturity + consent
+                    + legalCapacity + financialLiteracy + digitalLiteracy) / 7
+
+penalidades:
+  parentalAllow=true          → −2   (precisa de permissão)
+  autonomy=false              → −2   (sem autonomia)
+  school=true && workPermit=false → −1 (estudante sem trabalho)
+  family=true && parentalAllow=true → −1 (governança familiar reforçada)
+
+comando efetivo = max(0, capacidade − penalidades) / 7</pre>
+
+  <h3>4.2 · 0x0228</h3>
+<pre>comando = (job + salary + travel + accounts + savings + housing + insurance
+         + contractSigning + licenses + creditHistory + taxFiling + businessOwnership) / 12</pre>
+
+  <h3>4.3 · Assimetria com direção</h3>
+<pre>diff% = |comando_young − comando_old| × 100
+
+0–10%   → EQUILIBRADA
+11–25%  → LEVE
+26–50%  → MODERADA
+51–75%  → ALTA
+76–100% → CRÍTICA</pre>
+  <p>Direção explícita: <code>0x0228 &gt; 0x0227</code> (padrão típico — adulto comanda) ou <code>0x0227 &gt; 0x0228</code> (inverso — capacidade sem recurso).</p>
+
+  <h2>5 · Métodos de prefixo</h2>
   <div class="wrap"><table class="table">
-    <tr><th>método</th><th>efeito</th></tr>
-    <tr><td><code>.set({...})</code></td><td>configura flags em lote</td></tr>
-    <tr><td><code>.grant("autonomy","consent")</code></td><td>liga flags</td></tr>
-    <tr><td><code>.revoke("parentalAllow")</code></td><td>desliga flags</td></tr>
-    <tr><td><code>.reset()</code></td><td>zera todas as flags</td></tr>
+    <tr><th>método / getter</th><th>efeito</th></tr>
+    <tr><td><code>.set({...})</code></td><td>configura flags</td></tr>
+    <tr><td><code>.grant(...)</code></td><td>liga flags</td></tr>
+    <tr><td><code>.revoke(...)</code></td><td>desliga</td></tr>
+    <tr><td><code>.reset()</code></td><td>zera</td></tr>
     <tr><td><code>.missing()</code></td><td>lista flags desligadas</td></tr>
-    <tr><td><code>.audit()</code></td><td>mostra estado por grupo</td></tr>
-    <tr><td><code>.flag</code></td><td>getter booleano (ex.: <code>young.autonomy</code>)</td></tr>
-    <tr><td><code>.power</code></td><td>getter: quantas flags ligadas (0..15 / 0..12)</td></tr>
-    <tr><td><code>.ratio</code></td><td>getter: poder normalizado (0..1)</td></tr>
+    <tr><td><code>.audit()</code></td><td>estado por grupo</td></tr>
+    <tr><td><b><code>.nominal</code></b></td><td><b>capacidade nominal (0..7 / 0..12)</b></td></tr>
+    <tr><td><b><code>.power</code></b></td><td><b>comando efetivo (após penalidades)</b></td></tr>
+    <tr><td><b><code>.ratio</code></b></td><td><b>comando efetivo normalizado (0..1)</b></td></tr>
+    <tr><td><b><code>.constraints</code></b></td><td><b>lista de restrições ativas (0x0227)</b></td></tr>
   </table></div>
 
-  <h2>5 · agap — vínculo</h2>
-<pre><b>agap</b>(young, old)
-<b>agap</b>.set(coabitation=<u>true</u>, emancipation=<u>false</u>, writtenContract=<u>true</u>)</pre>
-  <p>Também aceita <code>agap(young + old)</code>. Todos os flags de governança viram getters booleanos.</p>
-
-  <h3>Métodos</h3>
+  <h2>6 · agap — vínculo</h2>
   <div class="wrap"><table class="table">
-    <tr><th>método</th><th>efeito</th></tr>
-    <tr><td><code>agap.grant(...flags)</code></td><td>liga governança</td></tr>
-    <tr><td><code>agap.revoke(...flags)</code></td><td>desliga</td></tr>
-    <tr><td><code>agap.reset()</code></td><td>zera governança</td></tr>
-    <tr><td><code>agap.audit()</code></td><td>mostra estado</td></tr>
-    <tr><td><code>agap.diagnose()</code></td><td>alias de <code>.solution</code></td></tr>
-    <tr><td><code>agap.assess()</code></td><td>retorna objeto de balanço</td></tr>
-    <tr><td><code>agap.snapshot()</code></td><td>JSON do estado atual</td></tr>
-    <tr><td><code>agap.restore(json)</code></td><td>restaura estado</td></tr>
-    <tr><td><code>agap.balance</code></td><td>getter: { young, old, diffPct, level }</td></tr>
-    <tr><td><code>agap.solution</code></td><td>getter: imprime diagnóstico</td></tr>
+    <tr><th>método / getter</th><th>efeito</th></tr>
+    <tr><td><code>agap(a, b)</code></td><td>registra prefixos</td></tr>
+    <tr><td><code>agap.set({...})</code></td><td>coabitation / emancipation / governança</td></tr>
+    <tr><td><code>agap.audit()</code></td><td>estado das 10 flags de governança</td></tr>
+    <tr><td><b><code>agap.fix(flag)</code></b></td><td><b>aplica correção (agap / young / old)</b></td></tr>
+    <tr><td><b><code>agap.proposeAll()</code></b></td><td><b>lista todas as correções pendentes</b></td></tr>
+    <tr><td><b><code>agap.report()</code></b></td><td><b>relatório com pendências</b></td></tr>
+    <tr><td><b><code>agap.balance</code></b></td><td><b>{ young, old, diffPct, direction, level }</b></td></tr>
+    <tr><td><code>agap.solution</code></td><td>diagnóstico completo</td></tr>
+    <tr><td><code>agap.snapshot() / .restore()</code></td><td>serializar / restaurar</td></tr>
   </table></div>
 
-  <h2>6 · Funções de console</h2>
-  <div class="wrap"><table class="table">
-    <tr><th>função</th><th>cor</th></tr>
-    <tr><td><code>print(msg)</code></td><td>padrão</td></tr>
-    <tr><td><code>note(msg)</code></td><td>roxo (informativo)</td></tr>
-    <tr><td><code>warn(msg)</code></td><td>amarelo</td></tr>
-    <tr><td><code>error(msg)</code></td><td>vermelho</td></tr>
-    <tr><td><code>success(msg)</code></td><td>verde</td></tr>
-  </table></div>
+  <h2>7 · Sintaxe <code>fix</code></h2>
+<pre><b>fix</b> autonomy           <i>// young.grant('autonomy') — remove −2</i>
+<b>fix</b> parentalAllow      <i>// young.revoke('parentalAllow') — remove −2 e −1</i>
+<b>fix</b> workPermit         <i>// young.grant('workPermit') — remove −1</i>
+<b>fix</b> discerniment       <i>// young.grant('discerniment') — +1 capacidade</i>
+<b>fix</b> financialLiteracy  <i>// young.grant('financialLiteracy') — +1</i>
+<b>fix</b> conflictResolution <i>// agap: mediação + revisão + log</i>
+<b>fix</b> writtenContract    <i>// agap: contrato escrito</i></pre>
 
-  <h2>7 · Sintaxes DSL</h2>
+  <div class="note fix">
+    <b>Regra:</b> flags de restrição (<code>parentalAllow</code>) são <b>revogadas</b> pelo <code>fix</code>.
+    Flags de capacidade e governança são <b>garantidas</b>.
+  </div>
 
-  <h3>7.1 · <code>if</code> clássico</h3>
-<pre><b>if</b> (agap.coabitation === true) {
-  print("nao e recomendado afastar dos pais ou estudos")
-} <b>else</b> {
-  print("certo, so deixe a autonomia garantida")
-}</pre>
+  <h2>8 · Outras DSLs</h2>
+<pre><b>assert</b> writtenContract
+<b>when</b> autonomy.catch(print"autonomia garantida")
+<b>if</b> coabitation = true.catch(print"coabitação ativa")
+<b>note</b> "texto"   <b>warn</b> "texto"   <b>error</b> "texto"   <b>success</b> "texto"
+<b>report</b>            <i>// relatório completo</i></pre>
 
-  <h3>7.2 · <code>if/catch</code> inline</h3>
-<pre><b>if</b> coabitation = true.catch(print"nao e recomendado afastar dos pais ou estudos")
-<b>else if</b> coabitation = false.catch(print"certo, so deixe a autonomia garantida")</pre>
-
-  <h3>7.3 · <code>when</code></h3>
-<pre><b>when</b> autonomy.catch(print"autonomia garantida")
-<b>when</b> writtenContract.catch(print"contrato escrito presente")</pre>
-
-  <h3>7.4 · <code>assert</code> (linha isolada)</h3>
-<pre><b>assert</b> autonomy
-<b>assert</b> writtenContract</pre>
-  <p>Verifica a flag em qualquer contexto (young, old ou agap). Falha se não estiver ligada em nenhum.</p>
-
-  <h3>7.5 · <code>note/warn/error/success</code> (linha isolada)</h3>
-<pre><b>note</b> "rodada iniciada"
-<b>warn</b> "assimetria detectada"
-<b>error</b> "falta contrato escrito"
-<b>success</b> "auditoria concluída"</pre>
-
-  <h2>8 · Cálculo de poder</h2>
-<pre>0x0227: capacity(7) + support(5) + education(3) = 0..15
-0x0228: resources(7) + legal(5)              = 0..12
-
-ratio = poder / máximo
-diff% = |ratio_young − ratio_old| × 100</pre>
-  <ul>
-    <li><b>0–10%</b> → EQUILIBRADA (verde)</li>
-    <li><b>11–25%</b> → LEVE (ciano)</li>
-    <li><b>26–50%</b> → MODERADA (amarelo)</li>
-    <li><b>51–75%</b> → ALTA (vermelho)</li>
-    <li><b>76–100%</b> → CRÍTICA (vermelho)</li>
-  </ul>
-
-  <h2>9 · Erros</h2>
-  <p>O motor detecta e mostra linha aproximada:</p>
-  <ul>
-    <li><b>Sintaxe</b> — delimitadores, <code>print"..."</code> sem parênteses, DSL malformada.</li>
-    <li><b>Variável não declarada</b> — sugere <code>var young = 0x0227</code> ou o <code>.set()</code> correto.</li>
-    <li><b>Tipo</b> — <code>.power()</code> em vez de <code>.power</code> (getter) etc.</li>
-    <li><b>Assertion</b> — flag não garantida em nenhum contexto.</li>
-  </ul>
-
-  <h2>10 · Exemplo completo</h2>
-<pre><b>note</b> "iniciando auditoria RothBard"
-
-<b>var</b> young = 0x0227
+  <h2>9 · Exemplo</h2>
+<pre><b>var</b> young = 0x0227
 <b>var</b> old   = 0x0228
 
 <b>young</b>.set(
@@ -294,29 +270,32 @@ diff% = |ratio_young − ratio_old| × 100</pre>
   parentalAllow=<u>true</u>, autonomy=<u>false</u>, discerniment=<u>false</u>,
   consent=<u>true</u>, health=<u>true</u>, emotionalSupport=<u>true</u>
 )
-<b>old</b>.set(
-  job=<u>true</u>, salary=<u>true</u>, travel=<u>true</u>,
-  accounts=<u>true</u>, insurance=<u>true</u>
-)
+<b>old</b>.set(job=<u>true</u>, salary=<u>true</u>, travel=<u>true</u>,
+        accounts=<u>true</u>, insurance=<u>true</u>)
 
 <b>agap</b>(young, old)
-<b>agap</b>.set(
-  coabitation=<u>true</u>,
-  emancipation=<u>false</u>,
-  writtenContract=<u>true</u>,
-  reviewPeriod=<u>true</u>
-)
+<b>agap</b>.set(coabitation=<u>true</u>, writtenContract=<u>true</u>)
 
-<b>when</b> coabitation.catch(print"coabitacao ativa")
-<b>assert</b> writtenContract
+<b>agap</b>.solution
+<i>// 0x0227: nominal 2/7 · efetivo 0/7 (0%)</i>
+<i>// 0x0228: comando 5/12 (42%)</i>
+<i>// assimetria: MODERADA · direção 0x0228 > 0x0227</i>
+<i>// → limitação estrutural: capacidade existe, comando não</i>
 
-<b>agap</b>.print("resultado: " + agap).solution</pre>
+<b>fix</b> autonomy
+<b>fix</b> parentalAllow
+<b>fix</b> workPermit
+<b>fix</b> discerniment
+
+<b>agap</b>.solution
+<i>// 0x0227: nominal 4/7 · efetivo 4/7 (57%)</i>
+<i>// assimetria: LEVE · direção 0x0227 > 0x0228</i></pre>
 
 </section>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   1. GRUPOS DE FLAGS
+   1. GRUPOS
    ═══════════════════════════════════════════════════════════ */
 const FG = {
   young: {
@@ -338,7 +317,31 @@ const ALL_OLD   = Object.values(FG.old).flat();
 const ALL_AGAP  = Object.values(FG.agap).flat();
 
 /* ═══════════════════════════════════════════════════════════
-   2. ESTADO
+   2. MÉTODOS DE CORREÇÃO AGAP
+   ═══════════════════════════════════════════════════════════ */
+const FIXES = {
+  writtenContract:   { method: 'documento escrito com cláusulas de saída, revisão e transparência',
+                       enables: ['writtenContract','consentDocumented','reviewPeriod','transparencyLog'],
+                       code: "agap.fix('writtenContract')" },
+  conflictResolution:{ method: 'mediação por terceiro + revisão periódica + log de transparência',
+                       enables: ['thirdPartyArbiter','reviewPeriod','transparencyLog','conflictResolution'],
+                       code: "agap.fix('conflictResolution')" },
+  exitStrategy:      { method: 'plano de saída com prazos, recursos reservados e destino definido',
+                       enables: ['exitStrategy','safetyNet','savings'],
+                       code: "agap.fix('exitStrategy')" },
+  powerBalance:      { method: 'checklist de poder simétrico: decisões conjuntas documentadas',
+                       enables: ['powerBalance','consentDocumented','writtenContract'],
+                       code: "agap.fix('powerBalance')" },
+  thirdPartyArbiter: { method: 'árbitro externo nomeado e aceito por ambos os lados',
+                       enables: ['thirdPartyArbiter','conflictResolution','transparencyLog'],
+                       code: "agap.fix('thirdPartyArbiter')" }
+};
+
+/* flags young/old cujo "fix" = revogar (são restrições) */
+const CONSTRAINT_FLAGS = { parentalAllow: true };
+
+/* ═══════════════════════════════════════════════════════════
+   3. ESTADO
    ═══════════════════════════════════════════════════════════ */
 const consoleEl = document.getElementById('console');
 const editor    = document.getElementById('code');
@@ -363,21 +366,25 @@ old.set(
 )
 
 agap(young, old)
-agap.set(
-  coabitation=true,
-  emancipation=false,
-  writtenContract=true,
-  reviewPeriod=true
-)
+agap.set(coabitation=true, writtenContract=true)
 
-when coabitation.catch(print"coabitacao ativa")
-assert writtenContract
+note "── auditoria 1 ───────────────────────"
+agap.solution
 
-agap.print("resultado: " + agap).solution
+note "── transferindo comando ──────────────"
+fix autonomy
+fix parentalAllow
+fix workPermit
+fix discerniment
+
+note "── auditoria 2 ───────────────────────"
+agap.solution
+
+report
 `;
 
 /* ═══════════════════════════════════════════════════════════
-   3. CONSOLE
+   4. CONSOLE
    ═══════════════════════════════════════════════════════════ */
 function addLine(text, type){
   const d = document.createElement('div');
@@ -388,9 +395,7 @@ function addLine(text, type){
 }
 function print(msg, type){
   if (msg === null) msg = 'null';
-  if (typeof msg === 'object'){
-    try { msg = JSON.stringify(msg); } catch(e){ msg = String(msg); }
-  }
+  if (typeof msg === 'object'){ try { msg = JSON.stringify(msg); } catch(e){ msg = String(msg); } }
   addLine(String(msg), type || 'out');
 }
 function note(m){ print(String(m), 'note'); }
@@ -399,7 +404,49 @@ function error(m){ print(String(m), 'err'); }
 function success(m){ print(String(m), 'ok'); }
 
 /* ═══════════════════════════════════════════════════════════
-   4. FÁBRICA DE PREFIXOS
+   5. CÁLCULO DE COMANDO EFETIVO
+   ═══════════════════════════════════════════════════════════ */
+function calcYoungCommand(y){
+  const CAPS = FG.young.capacity;
+  const cap = CAPS.filter(f => y[f]).length;
+  const active = CAPS.filter(f => y[f]);
+
+  const penalties = [];
+  let penalty = 0;
+  if (y.parentalAllow){ penalty += 2; penalties.push('parentalAllow (+2)'); }
+  if (!y.autonomy)    { penalty += 2; penalties.push('autonomy ausente (+2)'); }
+  if (y.school && !y.workPermit){ penalty += 1; penalties.push('escola sem workPermit (+1)'); }
+  if (y.family && y.parentalAllow){ penalty += 1; penalties.push('family sob parentalAllow (+1)'); }
+
+  const effective = Math.max(0, cap - penalty);
+  return {
+    cap, active, penalty, penalties,
+    effective,
+    max: CAPS.length,
+    nominalRatio: cap / CAPS.length,
+    effRatio: effective / CAPS.length
+  };
+}
+function calcOldCommand(o){
+  const RES = FG.old.resources;
+  const LEG = FG.old.legal;
+  const res = RES.filter(f => o[f]).length;
+  const leg = LEG.filter(f => o[f]).length;
+  const total = res + leg;
+  const max = RES.length + LEG.length;
+  return { res, leg, total, max, effRatio: total / max };
+}
+function classify(diffPct){
+  if (diffPct <= 10) return 'EQUILIBRADA';
+  if (diffPct <= 25) return 'LEVE';
+  if (diffPct <= 50) return 'MODERADA';
+  if (diffPct <= 75) return 'ALTA';
+  return 'CRÍTICA';
+}
+function pct(x){ return Math.round(x * 100) + '%'; }
+
+/* ═══════════════════════════════════════════════════════════
+   6. FÁBRICA DE PREFIXOS
    ═══════════════════════════════════════════════════════════ */
 function __mk(n){
   const kind = n === 0x0227 ? 'young' : n === 0x0228 ? 'old' : 'custom';
@@ -433,18 +480,55 @@ function __mk(n){
   all.forEach(f => {
     Object.defineProperty(obj, f, { get(){ return !!this.data[f]; } });
   });
-  Object.defineProperty(obj, 'power', {
-    get(){ return all.filter(f => this.data[f]).length; }
-  });
-  Object.defineProperty(obj, 'ratio', {
-    get(){ return all.length ? (this.power / all.length) : 0; }
-  });
+
+  if (kind === 'young'){
+    Object.defineProperty(obj, 'nominal', {
+      get(){ return calcYoungCommand(this.data).cap; }
+    });
+    Object.defineProperty(obj, 'power', {
+      get(){ return calcYoungCommand(this.data).effective; }
+    });
+    Object.defineProperty(obj, 'ratio', {
+      get(){ return calcYoungCommand(this.data).effRatio; }
+    });
+    Object.defineProperty(obj, 'constraints', {
+      get(){ return calcYoungCommand(this.data).penalties; }
+    });
+  } else if (kind === 'old'){
+    Object.defineProperty(obj, 'nominal', {
+      get(){ return calcOldCommand(this.data).total; }
+    });
+    Object.defineProperty(obj, 'power', {
+      get(){ return calcOldCommand(this.data).total; }
+    });
+    Object.defineProperty(obj, 'ratio', {
+      get(){ return calcOldCommand(this.data).effRatio; }
+    });
+    Object.defineProperty(obj, 'constraints', { get(){ return []; } });
+  }
   return obj;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   5. AGAP
+   7. AGAP
    ═══════════════════════════════════════════════════════════ */
+function __getFlag(name){
+  const yv = agapState.young && agapState.young.data[name];
+  const ov = agapState.old   && agapState.old.data[name];
+  const av = agapState[name];
+  return !!(yv || ov || av);
+}
+function __assert(name){
+  if (!__getFlag(name)){
+    print('✗ assert: "' + name + '" não garantido', 'err');
+    if (FIXES[name]) print('  → correção: fix ' + name, 'sol');
+    else if (ALL_YOUNG.includes(name) || ALL_OLD.includes(name)) print('  → correção: fix ' + name, 'sol');
+    throw new Error('assertion failed: ' + name);
+  }
+  print('✓ assert: ' + name + ' ok', 'ok');
+  return true;
+}
+
 function agap(...args){
   for (const a of args){
     if (!a || typeof a !== 'object') continue;
@@ -461,6 +545,102 @@ agap.revoke = function(...flags){ flags.forEach(f => { agapState[f] = false; });
 agap.reset = function(){ ALL_AGAP.forEach(f => { agapState[f] = false; }); return agap; };
 agap.diagnose = function(){ solve(); return agap; };
 agap.assess = function(){ return agap.balance; };
+
+/* ─── FIX estendido: agap / young / old ─── */
+agap.fix = function(flag){
+  // 1. Agap fix catalog
+  if (FIXES[flag]){
+    FIXES[flag].enables.forEach(f => {
+      if (ALL_AGAP.includes(f)) agapState[f] = true;
+      else if (ALL_YOUNG.includes(f) && agapState.young) agapState.young.data[f] = true;
+      else if (ALL_OLD.includes(f) && agapState.old) agapState.old.data[f] = true;
+    });
+    print('✓ fix: ' + flag + ' aplicado', 'ok');
+    print('  método: ' + FIXES[flag].method, 'note');
+    print('  flags ligadas: ' + FIXES[flag].enables.join(', '), 'info');
+    return agap;
+  }
+  // 2. Young flag
+  if (ALL_YOUNG.includes(flag)){
+    if (!agapState.young){ print('✗ fix: young não declarado', 'err'); return agap; }
+    const val = !CONSTRAINT_FLAGS[flag];
+    agapState.young.data[flag] = val;
+    print('✓ fix: young.' + flag + ' = ' + val +
+          (val ? '' : ' (restrição removida)'), 'ok');
+    return agap;
+  }
+  // 3. Old flag
+  if (ALL_OLD.includes(flag)){
+    if (!agapState.old){ print('✗ fix: old não declarado', 'err'); return agap; }
+    agapState.old.data[flag] = true;
+    print('✓ fix: old.' + flag + ' = true', 'ok');
+    return agap;
+  }
+  // 4. Agap flag pura
+  if (ALL_AGAP.includes(flag)){
+    agapState[flag] = true;
+    print('✓ fix: agap.' + flag + ' = true', 'ok');
+    return agap;
+  }
+  print('✗ fix: flag desconhecida "' + flag + '"', 'err');
+  print('  sugestões: autonomy, parentalAllow, workPermit, discerniment, ' +
+        Object.keys(FIXES).join(', '), 'warn');
+  return agap;
+};
+agap.propose = function(flag){
+  if (FIXES[flag]) return { flag, target:'agap', method: FIXES[flag].method,
+                            enables: FIXES[flag].enables.slice(),
+                            code: 'fix ' + flag, apply: () => agap.fix(flag) };
+  if (ALL_YOUNG.includes(flag)){
+    const rev = !!CONSTRAINT_FLAGS[flag];
+    return { flag, target:'young',
+             method: rev ? 'revogar restrição estrutural' : 'grant — aumenta capacidade efetiva',
+             enables: [flag], code: 'fix ' + flag, apply: () => agap.fix(flag) };
+  }
+  if (ALL_OLD.includes(flag)){
+    return { flag, target:'old', method: 'grant — aumenta comando',
+             enables: [flag], code: 'fix ' + flag, apply: () => agap.fix(flag) };
+  }
+  if (ALL_AGAP.includes(flag)){
+    return { flag, target:'agap', method: 'grant — liga governança',
+             enables: [flag], code: 'fix ' + flag, apply: () => agap.fix(flag) };
+  }
+  return null;
+};
+agap.proposeAll = function(){
+  const out = [];
+  // agap fixes pendentes
+  for (const f in FIXES){ if (!__getFlag(f)) out.push(agap.propose(f)); }
+  // young: capacidades faltando e restrições ativas
+  if (agapState.young){
+    const y = agapState.young.data;
+    FG.young.capacity.forEach(f => {
+      if (!y[f]) out.push(agap.propose(f));
+    });
+    if (y.parentalAllow) out.push(agap.propose('parentalAllow'));
+    if (y.school && !y.workPermit) out.push(agap.propose('workPermit'));
+  }
+  return out;
+};
+agap.report = function(){
+  addLine('══ RELATÓRIO RothBard ═══════════════', 'head');
+  for (const f of FG.agap.governance){
+    const v = !!agapState[f];
+    addLine('  ' + f + ' = ' + v, v ? 'ok' : 'warn');
+  }
+  const pending = agap.proposeAll();
+  addLine('', 'out');
+  if (pending.length){
+    addLine('correções pendentes (' + pending.length + '):', 'sol');
+    pending.slice(0, 12).forEach(p => {
+      addLine('• ' + (p.target ? p.target + '.' : '') + p.flag + '  →  ' + p.code, 'sol');
+    });
+    if (pending.length > 12) addLine('  … e mais ' + (pending.length-12), 'note');
+  } else {
+    addLine('✓ nenhuma correção pendente', 'ok');
+  }
+  return agap;
+};
 agap.audit = function(){
   addLine('── AUDIT AGAP ───────────────────────', 'head');
   for (const [grp, list] of Object.entries(FG.agap)){
@@ -486,9 +666,7 @@ agap.restore = function(json){
     if (obj.old   && agapState.old)   agapState.old.data   = obj.old;
     if (obj.agap) ALL_AGAP.forEach(f => { if (f in obj.agap) agapState[f] = !!obj.agap[f]; });
     print('✓ estado restaurado', 'ok');
-  } catch(e){
-    print('✗ restore: ' + e.message, 'err');
-  }
+  } catch(e){ print('✗ restore: ' + e.message, 'err'); }
   return agap;
 };
 agap.toString = function(){
@@ -502,20 +680,18 @@ Object.defineProperty(agap, 'balance', {
     const y = agapState.young ? agapState.young.data : null;
     const o = agapState.old   ? agapState.old.data   : null;
     if (!y || !o) return { error: 'faltam prefixos' };
-    const yRaw = ALL_YOUNG.filter(f => y[f]).length;
-    const oRaw = ALL_OLD.filter(f => o[f]).length;
-    const yR = yRaw / ALL_YOUNG.length;
-    const oR = oRaw / ALL_OLD.length;
-    const diffPct = Math.round(Math.abs(yR - oR) * 100);
-    let level;
-    if (diffPct <= 10) level = 'EQUILIBRADA';
-    else if (diffPct <= 25) level = 'LEVE';
-    else if (diffPct <= 50) level = 'MODERADA';
-    else if (diffPct <= 75) level = 'ALTA';
-    else level = 'CRÍTICA';
-    return { young: yRaw, youngMax: ALL_YOUNG.length,
-             old: oRaw, oldMax: ALL_OLD.length,
-             diffPct, level };
+    const yc = calcYoungCommand(y);
+    const oc = calcOldCommand(o);
+    const diffPct = Math.round(Math.abs(yc.effRatio - oc.effRatio) * 100);
+    let direction = 'equilibrado';
+    if (yc.effRatio > oc.effRatio + 0.02) direction = '0x0227 > 0x0228';
+    else if (oc.effRatio > yc.effRatio + 0.02) direction = '0x0228 > 0x0227';
+    return {
+      young: { nominal: yc.cap, effective: yc.effective, max: yc.max,
+               penalty: yc.penalty, ratio: yc.effRatio },
+      old:   { total: oc.total, max: oc.max, ratio: oc.effRatio },
+      diffPct, direction, level: classify(diffPct)
+    };
   }
 });
 ALL_AGAP.forEach(k => {
@@ -525,26 +701,16 @@ Object.defineProperty(agap, 'young', { get(){ return agapState.young; } });
 Object.defineProperty(agap, 'old',   { get(){ return agapState.old; } });
 
 /* ═══════════════════════════════════════════════════════════
-   6. ASSERTION
+   8. MOTOR DE SOLUÇÃO
    ═══════════════════════════════════════════════════════════ */
-function __getFlag(name){
-  const yv = agapState.young && agapState.young.data[name];
-  const ov = agapState.old   && agapState.old.data[name];
-  const av = agapState[name];
-  return !!(yv || ov || av);
-}
-function __assert(name){
-  if (!__getFlag(name)){
-    print('✗ assert: "' + name + '" não garantido em nenhum contexto', 'err');
-    throw new Error('assertion failed: ' + name);
+function warnWithFix(msg, flag){
+  addLine('⚠ ' + msg, 'warn');
+  if (flag && FIXES[flag]){
+    addLine('  → método:   ' + FIXES[flag].method, 'sol');
+    addLine('  → correção: fix ' + flag, 'sol');
   }
-  print('✓ assert: ' + name + ' ok', 'ok');
-  return true;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   7. MOTOR DE SOLUÇÃO
-   ═══════════════════════════════════════════════════════════ */
 function solve(){
   addLine('', 'out');
   addLine('── DIAGNÓSTICO RothBard ─────────────', 'head');
@@ -556,107 +722,123 @@ function solve(){
     return;
   }
 
-  const yCap = FG.young.capacity.filter(f => y[f]).length;
-  const ySup = FG.young.support.filter(f => y[f]).length;
-  const yEdu = FG.young.education.filter(f => y[f]).length;
-  const yRaw = yCap + ySup + yEdu;
+  const yc = calcYoungCommand(y);
+  const oc = calcOldCommand(o);
+  const diffPct = Math.round(Math.abs(yc.effRatio - oc.effRatio) * 100);
+  const level = classify(diffPct);
+  let direction = 'equilibrado';
+  if (yc.effRatio > oc.effRatio + 0.02) direction = '0x0227 > 0x0228';
+  else if (oc.effRatio > yc.effRatio + 0.02) direction = '0x0228 > 0x0227';
 
-  const oRes = FG.old.resources.filter(f => o[f]).length;
-  const oLeg = FG.old.legal.filter(f => o[f]).length;
-  const oRaw = oRes + oLeg;
+  /* 0x0227 */
+  addLine('0x0227 · capacidade nominal: ' + yc.cap + '/' + yc.max +
+          ' (' + pct(yc.nominalRatio) + ')', 'info');
+  if (yc.active.length) addLine('  ativas: ' + yc.active.join(', '), 'info');
+  if (yc.penalties.length){
+    addLine('  restrições ativas (' + yc.penalty + '):', 'warn');
+    yc.penalties.forEach(p => addLine('    − ' + p, 'warn'));
+  } else {
+    addLine('  sem restrições ativas', 'ok');
+  }
+  addLine('  → comando efetivo: ' + yc.effective + '/' + yc.max +
+          ' (' + pct(yc.effRatio) + ')',
+          yc.effRatio < 0.3 ? 'err' : yc.effRatio < 0.6 ? 'warn' : 'ok');
 
-  const yRatio = yRaw / ALL_YOUNG.length;
-  const oRatio = oRaw / ALL_OLD.length;
-  const diffPct = Math.round(Math.abs(yRatio - oRatio) * 100);
+  /* 0x0228 */
+  addLine('0x0228 · comando direto: ' + oc.total + '/' + oc.max +
+          ' (' + pct(oc.effRatio) + ')', 'info');
+  addLine('  recursos ' + oc.res + '/7 · jurídico ' + oc.leg + '/5', 'info');
 
-  addLine('0x0227 · poder: ' + yRaw + '/' + ALL_YOUNG.length + ' (' + Math.round(yRatio*100) + '%)', 'info');
-  addLine('  capacidade ' + yCap + '/' + FG.young.capacity.length +
-          ' · suporte ' + ySup + '/' + FG.young.support.length +
-          ' · educação ' + yEdu + '/' + FG.young.education.length, 'info');
-  addLine('0x0228 · poder: ' + oRaw + '/' + ALL_OLD.length + ' (' + Math.round(oRatio*100) + '%)', 'info');
-  addLine('  recursos ' + oRes + '/' + FG.old.resources.length +
-          ' · jurídico ' + oLeg + '/' + FG.old.legal.length, 'info');
+  /* assimetria com direção */
+  addLine('assimetria de comando: ' + level + ' (' + diffPct + '%)',
+          level === 'EQUILIBRADA' ? 'ok' :
+          level === 'LEVE' ? 'info' :
+          level === 'MODERADA' ? 'warn' : 'err');
+  if (direction !== 'equilibrado'){
+    addLine('  direção: ' + direction, 'sol');
+    if (direction === '0x0228 > 0x0227'){
+      addLine('  → padrão típico: quem tem recurso comanda a relação', 'note');
+      addLine('  → 0x0227 não pode consentir em simetria sob comando estrutural', 'note');
+    } else {
+      addLine('  → padrão inverso: 0x0227 tem comando por capacidade, não por recurso', 'note');
+      addLine('  → 0x0228 não tem comando apesar dos recursos', 'note');
+    }
+  }
 
-  let level, tipo;
-  if (diffPct <= 10){ level = 'EQUILIBRADA'; tipo = 'ok'; }
-  else if (diffPct <= 25){ level = 'LEVE'; tipo = 'info'; }
-  else if (diffPct <= 50){ level = 'MODERADA'; tipo = 'warn'; }
-  else if (diffPct <= 75){ level = 'ALTA'; tipo = 'err'; }
-  else { level = 'CRÍTICA'; tipo = 'err'; }
-  addLine('assimetria: ' + level + ' (' + diffPct + '% relativo)', tipo);
-
+  /* coabitação */
   const coab = !!agapState.coabitation;
   const eman = !!agapState.emancipation;
   if (coab) addLine('coabitação = true → nao e recomendado afastar dos pais ou estudos', 'warn');
   else      addLine('coabitação = false → certo, so deixe a autonomia garantida', 'ok');
-
-  if (eman){
-    if (yCap < 3) addLine('emancipação = true com capacidade frágil → tutela de fato', 'err');
-    else addLine('emancipação = true com base mínima → monitorar contas e convivência', 'warn');
-  } else {
-    addLine('emancipação = false → construir autonomia por etapas', 'info');
+  if (eman && yc.effRatio < 0.4){
+    addLine('emancipação = true com comando < 40% → tutela de fato', 'err');
   }
 
-  if (!agapState.writtenContract && coab){
-    addLine('⚠ coabitação sem contrato escrito: poder informal = poder de fato', 'err');
-  }
-  if (!agapState.exitStrategy && eman){
-    addLine('⚠ emancipação sem estratégia de saída: risco de reversão', 'warn');
-  }
-  if (!agapState.conflictResolution){
-    addLine('⚠ sem método de resolução de conflito: a assimetria não tem saída institucional', 'warn');
-  }
+  /* avisos condicionais com fix */
+  if (!agapState.writtenContract && coab)
+    warnWithFix('coabitação sem contrato escrito: poder informal = poder de fato', 'writtenContract');
+  if (!agapState.exitStrategy && eman)
+    warnWithFix('emancipação sem estratégia de saída: risco de reversão', 'exitStrategy');
+  if (!agapState.conflictResolution)
+    warnWithFix('sem método de resolução de conflito: a assimetria não tem saída institucional', 'conflictResolution');
 
+  /* recomendações */
   addLine('', 'out');
-  addLine('recomendações (foco em poder, não em idade):', 'sol');
+  addLine('recomendações (foco em comando, não em idade):', 'sol');
   const rec = [];
-  if (!y.autonomy)          rec.push('0x0227: abrir autonomia gradual com decisões registradas');
-  if (!y.discerniment)      rec.push('0x0227: construir alto discernimento antes de emancipar');
-  if (!y.maturity)          rec.push('0x0227: maturidade é etapa, não bloqueio — formalizar critérios');
-  if (!y.consent)           rec.push('0x0227: consentimento informado ausente — formalizar');
-  if (!y.financialLiteracy) rec.push('0x0227: letramento financeiro é pré-requisito de autonomia material');
-  if (!o.job)               rec.push('0x0228: sem emprego, poder é retórico — não usar como argumento');
-  if (!o.salary)            rec.push('0x0228: sem salário declarado não há autonomia material');
-  if (!o.accounts)          rec.push('0x0228: contas próprias são o mínimo da autonomia financeira');
-  if (!o.creditHistory)     rec.push('0x0228: histórico de crédito é ativo de poder de longo prazo');
+  if (!y.autonomy)          rec.push('0x0227: fix autonomy — remove −2 de penalidade');
+  if (!y.discerniment)      rec.push('0x0227: fix discerniment — +1 capacidade efetiva');
+  if (!y.maturity)          rec.push('0x0227: fix maturity — +1 capacidade efetiva');
+  if (!y.consent)           rec.push('0x0227: fix consent — formalizar consentimento');
+  if (!y.financialLiteracy) rec.push('0x0227: fix financialLiteracy — +1 capacidade efetiva');
+  if (y.parentalAllow)      rec.push('0x0227: fix parentalAllow — remove −2 e −1 (governança familiar)');
+  if (y.school && !y.workPermit) rec.push('0x0227: fix workPermit — remove −1 (escola sem trabalho)');
+  if (oc.total < 3)         rec.push('0x0228: comando baixo — recursos não sustentam argumento de autoridade');
   if (coab && !agapState.writtenContract) rec.push('coabitar exige contrato escrito, não hierarquia');
-  if (!coab && !eman)       rec.push('sem coabitação e sem emancipação: autonomia por acordo explícito');
-  if (!rec.length)          rec.push('configuração já está equilibrada — nenhuma ação necessária');
+  if (!rec.length)          rec.push('comando simétrico — nenhuma ação necessária');
   rec.forEach(r => addLine('• ' + r, 'sol'));
+
+  /* pendências */
+  const pending = agap.proposeAll();
+  if (pending.length){
+    addLine('', 'out');
+    addLine('correções aplicáveis (' + pending.length + '):', 'head');
+    pending.slice(0, 8).forEach(p => {
+      const prefix = p.target === 'young' ? '0x0227 · ' : p.target === 'old' ? '0x0228 · ' : 'agap · ';
+      addLine('• ' + prefix + p.code + '  — ' + p.method, 'sol');
+    });
+    if (pending.length > 8) addLine('  … e mais ' + (pending.length-8), 'note');
+    addLine('dica: escreva "fix ' + pending[0].flag + '" no editor', 'warn');
+  }
   addLine('────────────────────────────────────', 'head');
 }
 
 /* ═══════════════════════════════════════════════════════════
-   8. VERIFICADOR DE DELIMITADORES
+   9. VERIFICADOR DE DELIMITADORES
    ═══════════════════════════════════════════════════════════ */
 function checkBrackets(src){
   const opens = { '(':')', '[':']', '{':'}' };
   const closes = { ')':'(', ']':'[', '}':'{' };
   const stack = [], issues = [];
   let line = 1, i = 0, str = null;
-
   while (i < src.length){
     const c = src[i];
     if (c === '\n'){ line++; i++; continue; }
-    if (str){
-      if (c === str && src[i-1] !== '\\') str = null;
-      i++; continue;
-    }
+    if (str){ if (c === str && src[i-1] !== '\\') str = null; i++; continue; }
     if (c === '"' || c === "'" || c === '`'){ str = c; i++; continue; }
     if (c === '/' && src[i+1] === '/'){ while (i < src.length && src[i] !== '\n') i++; continue; }
     if (c === '/' && src[i+1] === '*'){
       i += 2;
       while (i < src.length-1 && !(src[i] === '*' && src[i+1] === '/')){
-        if (src[i] === '\n') line++;
-        i++;
+        if (src[i] === '\n') line++; i++;
       }
       i += 2; continue;
     }
     if (opens[c]) stack.push({ c, line });
     else if (closes[c]){
-      if (!stack.length || stack[stack.length-1].c !== closes[c]){
+      if (!stack.length || stack[stack.length-1].c !== closes[c])
         issues.push({ line, msg: 'fechamento inesperado "' + c + '"' });
-      } else stack.pop();
+      else stack.pop();
     }
     i++;
   }
@@ -665,40 +847,33 @@ function checkBrackets(src){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   9. SUGESTÕES
+   10. SUGESTÕES
    ═══════════════════════════════════════════════════════════ */
 function suggestDecl(name){
   if (name === 'young') return 'declare: var young = 0x0227';
   if (name === 'old')   return 'declare: var old = 0x0228';
   if (name === 'agap')  return 'agap é global; chame agap(young, old) antes de .solution';
-  if (ALL_YOUNG.includes(name)) return 'flag do 0x0227 — use young.set({ ' + name + ': true }) ou young.' + name;
-  if (ALL_OLD.includes(name))   return 'flag do 0x0228 — use old.set({ ' + name + ': true }) ou old.' + name;
-  if (ALL_AGAP.includes(name))  return 'flag do agap — use agap.set({ ' + name + ': true }) ou agap.' + name;
+  if (ALL_YOUNG.includes(name)) return 'flag do 0x0227 — use young.set({ ' + name + ': true }) ou fix ' + name;
+  if (ALL_OLD.includes(name))   return 'flag do 0x0228 — use old.set({ ' + name + ': true }) ou fix ' + name;
+  if (ALL_AGAP.includes(name))  return 'flag do agap — use agap.set({ ' + name + ': true }) ou fix ' + name;
   return 'declare: var ' + name + ' = 0x0227 (ou 0x0228)';
 }
 function guessSyntaxHint(raw, js){
   const hints = [];
   if (/\bprint\s+["']/.test(raw)) hints.push('print precisa de parênteses: print("texto")');
   if (!/agap\s*\(/.test(js) && /\.solution/.test(js)) hints.push('chame agap(young, old) antes de .solution');
-  if (/if\s+\w+\s*=\s*(true|false)\s*\.catch/.test(raw) && !/if\s*\(\s*agap\./.test(js))
-    hints.push('DSL "if flag = true.catch(print\\"...\\")" precisa de aspas retas');
   return hints.length ? hints.join(' · ') : '';
 }
 
 /* ═══════════════════════════════════════════════════════════
-   10. PRÉ-PROCESSADOR DSL
+   11. PRÉ-PROCESSADOR
    ═══════════════════════════════════════════════════════════ */
 function preprocess(src){
   let s = src;
-
-  // 1) agap(a + b) → agap(a, b)
   s = s.replace(/agap\s*\(\s*([\w$]+)\s*\+\s*([\w$]+)\s*\)/g, 'agap($1, $2)');
-
-  // 2) 0x0227 / 0x0228
   s = s.replace(/(=\s*)0x0*227\b/gi, '$1__mk(0x0227)');
   s = s.replace(/(=\s*)0x0*228\b/gi, '$1__mk(0x0228)');
 
-  // 3) if flag = true.catch(print"...")
   s = s.replace(
     /\bif\s+(\w+)\s*=\s*(true|false)\s*\.catch\s*\(\s*print\s*"([^"]*)"\s*\)/g,
     'if (agap.$1 === $2) { print("$3") }'
@@ -707,8 +882,6 @@ function preprocess(src){
     /\bif\s+(\w+)\s*=\s*(true|false)\s*\.catch\s*\(\s*print\s*'([^']*)'\s*\)/g,
     "if (agap.$1 === $2) { print('$3') }"
   );
-
-  // 4) when flag.catch(print"...")
   s = s.replace(
     /^([ \t]*)when\s+(\w+)\s*\.catch\s*\(\s*print\s*"([^"]*)"\s*\)/gm,
     '$1if (__getFlag("$2")) { print("$3") }'
@@ -717,19 +890,14 @@ function preprocess(src){
     /^([ \t]*)when\s+(\w+)\s*\.catch\s*\(\s*print\s*'([^']*)'\s*\)/gm,
     "$1if (__getFlag('$2')) { print('$3') }"
   );
-
-  // 5) assert flag (linha isolada)
   s = s.replace(/^([ \t]*)assert\s+([A-Za-z_$][\w$]*)/gm, '$1__assert("$2")');
-
-  // 6) note/warn/error/success "..." (linha isolada)
   s = s.replace(/^([ \t]*)(note|warn|error|success)\s+"([^"]*)"/gm, '$1$2("$3")');
   s = s.replace(/^([ \t]*)(note|warn|error|success)\s+'([^']*)'/gm, "$1$2('$3')");
-
-  // 7) print "..." → print("...")
+  s = s.replace(/^([ \t]*)fix\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gm, '$1agap.fix("$2");');
+  s = s.replace(/^([ \t]*)report\s*;?\s*$/gm, '$1agap.report();');
   s = s.replace(/\bprint\s+"([^"]*)"/g, 'print("$1")');
   s = s.replace(/\bprint\s+'([^']*)'/g, "print('$1')");
 
-  // 8) .set( k = v, ... ) → .set({ k: v, ... })
   s = s.replace(/\.set\s*\(([\s\S]*?)\)/g, (m, inner) => {
     const t = inner.trim();
     if (t.startsWith('{')) return m;
@@ -747,12 +915,11 @@ function preprocess(src){
     }).join(', ');
     return '.set({ ' + obj + ' })';
   });
-
   return s;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   11. EXECUÇÃO
+   12. EXECUÇÃO
    ═══════════════════════════════════════════════════════════ */
 function resetState(){
   agapState.young = null;
@@ -769,24 +936,19 @@ function run(){
   resetGlobals();
 
   const raw = editor.value.trim();
-  if (!raw){
-    addLine('editor vazio — escreva algo ou recarregue o exemplo', 'warn');
-    return;
-  }
+  if (!raw){ addLine('editor vazio', 'warn'); return; }
 
   const issues = checkBrackets(raw);
   if (issues.length){
     addLine('✗ Erro de sintaxe (delimitadores):', 'err');
-    for (const iss of issues.slice(0, 6)){
-      addLine('  linha ' + iss.line + ': ' + iss.msg, 'err');
-    }
+    for (const iss of issues.slice(0, 6)) addLine('  linha ' + iss.line + ': ' + iss.msg, 'err');
     addLine('  dica: verifique ( ) { } [ ] e vírgulas em .set(...)', 'warn');
     return;
   }
 
   let js;
   try { js = preprocess(raw); }
-  catch (e){ addLine('✗ Erro interno no pré-processamento: ' + e.message, 'err'); return; }
+  catch (e){ addLine('✗ Erro interno: ' + e.message, 'err'); return; }
 
   let fn;
   try {
@@ -822,14 +984,14 @@ function run(){
     } else if (e instanceof TypeError){
       addLine('✗ Erro de tipo: ' + e.message, 'err');
       const g = e.message.match(/\.(\w+)\s+is not a function/);
-      if (g && ['power','ratio','balance','young','old'].includes(g[1])){
+      if (g && ['power','ratio','nominal','constraints','balance'].includes(g[1]))
         addLine('  dica: .' + g[1] + ' é getter — use sem parênteses', 'warn');
-      } else {
-        addLine('  dica: verifique se o método existe (set, print, audit, solution)', 'warn');
-      }
+      else
+        addLine('  dica: verifique método (set, print, audit, fix, solution)', 'warn');
     } else if (/assertion failed/.test(e.message)){
+      const flag = e.message.replace('assertion failed: ','');
       addLine('✗ ' + e.message, 'err');
-      addLine('  dica: ligue a flag correspondente via .set() ou .grant()', 'warn');
+      addLine('  → correção: fix ' + flag, 'sol');
     } else {
       addLine('✗ ' + (e && e.message ? e.message : String(e)), 'err');
     }
@@ -837,7 +999,7 @@ function run(){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   12. UI
+   13. UI
    ═══════════════════════════════════════════════════════════ */
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
