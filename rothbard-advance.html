@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RothBard IDE</title>
+<style>
+  :root{--bg:#0b0f14;--panel:#0f1620;--panel2:#0d131a;--line:#1f2b38;--txt:#e6edf3;--dim:#8b9bb0;
+    --cyan:#67e8f9;--green:#86efac;--yellow:#fde68a;--red:#fca5a5;--purple:#c4b5fd;--pink:#f9a8d4;--accent:#5eead4;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+  body{padding:10px 10px 40px;max-width:900px;margin:0 auto;}
+  header h1{font-size:16px;margin:6px 0 2px;letter-spacing:.4px;color:var(--accent);
+    font-family:ui-monospace,Menlo,Consolas,monospace;}
+  header h1 span{color:var(--purple);}
+  header p{margin:0 0 12px;font-size:11.5px;color:var(--dim);}
+  .tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .tab{flex:1;padding:10px 12px;border-radius:10px;cursor:pointer;background:var(--panel);
+    color:var(--dim);border:1px solid var(--line);font-size:13px;font-weight:600;font-family:inherit;}
+  .tab.active{background:var(--panel2);color:var(--accent);border-color:var(--accent);
+    box-shadow:0 0 0 1px rgba(94,234,212,.15);}
+  .panel{display:none;}.panel.active{display:block;}
+  .bar{display:flex;align-items:center;gap:8px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:11px;color:var(--dim);padding:6px 2px;letter-spacing:.5px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);display:inline-block;}
+  .dot.green{background:var(--green);}
+  textarea#code{width:100%;min-height:44vh;display:block;background:var(--panel2);color:#c9d7e4;
+    border:1px solid var(--line);border-radius:12px;padding:12px;margin:0;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;line-height:1.55;tab-size:2;
+    resize:vertical;outline:none;caret-color:var(--accent);-webkit-text-fill-color:#c9d7e4;}
+  textarea#code:focus{border-color:#2c4358;}
+  .actions{display:flex;gap:8px;margin:10px 0 4px;}
+  .actions button{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--accent);color:#04211d;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;}
+  .actions button.ghost{background:var(--panel);color:var(--dim);font-weight:600;}
+  .console{background:#070b0f;border:1px solid var(--line);border-radius:12px;
+    padding:10px 12px;min-height:150px;max-height:46vh;overflow-y:auto;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6;
+    white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
+  .console .line{display:block;margin:0;padding:0;}
+  .line.out{color:var(--txt);}.line.info{color:var(--cyan);}.line.ok{color:var(--green);}
+  .line.warn{color:var(--yellow);}.line.err{color:var(--red);}
+  .line.head{color:var(--purple);font-weight:700;}.line.sol{color:var(--pink);}.line.note{color:var(--purple);}
+  .manual h2{font-size:14px;color:var(--accent);margin:22px 0 8px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px;}
+  .manual h3{font-size:12.5px;color:var(--purple);margin:16px 0 6px;}
+  .manual p,.manual li{font-size:13px;line-height:1.65;color:#c9d7e4;}
+  .manual ul{padding-left:20px;margin:6px 0;}
+  .manual code{background:#0d131a;border:1px solid var(--line);border-radius:5px;
+    padding:1px 5px;font-size:12px;color:var(--pink);font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .manual pre{background:#070b0f;border:1px solid var(--line);border-radius:10px;
+    padding:12px;overflow-x:auto;margin:8px 0 14px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12px;line-height:1.6;color:#9fd3e8;}
+  .manual pre b{color:var(--accent);}.manual pre i{color:var(--dim);font-style:normal;}
+  .manual pre u{color:var(--yellow);text-decoration:none;}
+  .manual .note{border-left:3px solid var(--yellow);background:#12100a;padding:8px 12px;
+    border-radius:0 8px 8px 0;font-size:12.5px;color:#e7dfc2;margin:10px 0;}
+  .manual .note.err{border-left-color:var(--red);background:#1a0d0d;color:#f5c2c2;}
+  .manual .note.fix{border-left-color:var(--pink);background:#1a0e14;color:#f5c9da;}
+  .table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:12px;}
+  .table th,.table td{border:1px solid var(--line);padding:6px 8px;text-align:left;
+    font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .table th{color:var(--accent);background:#0d131a;}.table td{color:#c9d7e4;}
+  .wrap{overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>▚ <span>RothBard</span> IDE</h1>
+  <p>forense anti-progressista · comando efetivo · idade não é variável · 96 flags</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="ide">🧪 IDE</button>
+  <button class="tab" data-tab="manual">📘 Manual</button>
+</div>
+
+<section id="ide" class="panel active">
+  <div class="bar"><span class="dot"></span> editor.rothbard</div>
+  <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
+  <div class="actions">
+    <button id="run">▶ Executar</button>
+    <button id="clear" class="ghost">Limpar console</button>
+  </div>
+  <div class="bar"><span class="dot green"></span> console</div>
+  <div id="console" class="console"></div>
+</section>
+
+<section id="manual" class="panel manual">
+
+  <h2>1 · Modelo</h2>
+  <p>O sistema mede <b>comando efetivo</b> em 0..1 — não quantidade de flags.
+  Restrições (<code>parentalAllow</code>, <code>autonomy=false</code>) geram penalidade.
+  A penalidade <b>desaparece quando a restrição é documentada</b>: nada é removido, nada separado, nada questionado.</p>
+
+  <h2>2 · 96 flags em 7 grupos</h2>
+
+  <h3>2.1 · 0x0227 neurocognitivo (16) — córtex pré-frontal</h3>
+  <p><code>workingMemory</code>, <code>inhibitoryControl</code>, <code>cognitiveFlexibility</code>, <code>planning</code>, <code>decisionMaking</code>, <code>abstractReasoning</code>, <code>sustainedAttention</code>, <code>emotionalRegulation</code>, <code>metacognition</code>, <code>delayedGratification</code>, <code>riskAssessment</code>, <code>socialCognition</code>, <code>moralReasoning</code>, <code>taskInitiation</code>, <code>selfMonitoring</code>, <code>timeManagement</code></p>
+
+  <h3>2.2 · 0x0227 suporte (13)</h3>
+  <p><code>familySupport</code>, <code>parentalAllow</code>, <code>emotionalSupport</code>, <code>financialSupport</code>, <code>psychologicalSupport</code>, <code>legalSupport</code>, <code>socialSupport</code>, <code>educationalSupport</code>, <code>healthSupport</code>, <code>housingSupport</code>, <code>nutritionSupport</code>, <code>transportationSupport</code>, <code>mentoring</code></p>
+
+  <h3>2.3 · 0x0227 educação (12)</h3>
+  <p><code>school</code>, <code>workPermit</code>, <code>educationPath</code>, <code>vocationalTraining</code>, <code>higherEducation</code>, <code>digitalLiteracy</code>, <code>financialLiteracy</code>, <code>healthLiteracy</code>, <code>legalLiteracy</code>, <code>criticalThinking</code>, <code>lifeSkills</code>, <code>citizenship</code></p>
+
+  <h3>2.4 · 0x0227 jurídico-parental (16)</h3>
+  <p><code>civilCapacity</code>, <code>criminalResponsibility</code>, <code>votingRight</code>, <code>drivingLicense</code>, <code>marriageConsent</code>, <code>medicalConsent</code>, <code>financialAutonomy</code>, <code>contractCapacity</code>, <code>testamentaryCapacity</code>, <code>laborCapacity</code>, <code>emancipationStatus</code>, <code>legalRepresentation</code>, <code>powerOfAttorney</code>, <code>guardianshipStatus</code>, <code>parentalAuthority</code>, <code>residenceChoice</code></p>
+
+  <h3>2.5 · 0x0228 recursos (12)</h3>
+  <p><code>job</code>, <code>salary</code>, <code>travel</code>, <code>accounts</code>, <code>savings</code>, <code>housing</code>, <code>insurance</code>, <code>investments</code>, <code>property</code>, <code>vehicle</code>, <code>emergencyFund</code>, <code>retirement</code></p>
+
+  <h3>2.6 · 0x0228 jurídico-adulto (10)</h3>
+  <p><code>contractSigning</code>, <code>licenses</code>, <code>creditHistory</code>, <code>taxFiling</code>, <code>businessOwnership</code>, <code>propertyDeed</code>, <code>marriageLicense</code>, <code>willTestament</code>, <code>professionalLicense</code>, <code>naturalization</code></p>
+
+  <h3>2.7 · agap governança (17)</h3>
+  <p><code>coabitation</code>, <code>emancipation</code>, <code>powerBalance</code>, <code>consentDocumented</code>, <code>reviewPeriod</code>, <code>exitStrategy</code>, <code>thirdPartyArbiter</code>, <code>writtenContract</code>, <code>transparencyLog</code>, <code>conflictResolution</code>, <code>returnPath</code>, <code>capacityScaffolding</code>, <code>mentorshipPlan</code>, <code>gradualAutonomy</code>, <code>coDecision</code>, <code>reviewSunset</code>, <code>supervisionDocumented</code></p>
+
+  <h2>3 · Cálculo</h2>
+<pre>0x0227 base = 0.35·(neuro/16) + 0.25·(suporte/13) + 0.20·(educação/12) + 0.20·(jurídico/16)
+0x0228 base = 0.60·(recursos/12) + 0.40·(jurídico/10)
+
+penalidades 0x0227 (viram 0 quando documentadas):
+  parentalAllow=true       −0.20  → 0 se writtenContract+reviewPeriod+supervisionDocumented
+  autonomy=false           −0.20  → 0 se capacityScaffolding+gradualAutonomy+mentorshipPlan
+  school && !workPermit    −0.10  → 0 se workPermit
+  familySupport && parentalAllow && !writtenContract  −0.10 → 0 se writtenContract
+
+comando efetivo = max(0, base − penalidades)
+assimetria = |efetivo_0227 − efetivo_0228| · 100</pre>
+
+  <ul>
+    <li>0–5% · EQUILIBRADA · verde</li>
+    <li>6–20% · LEVE · ciano</li>
+    <li>21–40% · MODERADA · amarelo</li>
+    <li>41–60% · ALTA · vermelho</li>
+    <li>61–100% · CRÍTICA · vermelho</li>
+  </ul>
+
+  <h2>4 · Resolução 100% sem separação</h2>
+  <p><code>resolve()</code> primeiro aplica toda a documentação não-destrutiva (contrato, revisão, supervisão, scaffolding, mentoria, gradualidade, co-decisão, transparência, árbitro, mediação) — as penalidades caem a zero. Depois adiciona capacidade ao lado mais fraco até a assimetria zerar.</p>
+<pre><b>resolve</b>            <i>// alvo padrão 5%</i>
+<b>resolve 2</b>          <i>// alvo 2%</i>
+<b>agap</b>.resolve(0)     <i>// alvo exato</i></pre>
+
+  <div class="note fix">
+    <b>Garantias de resolve():</b> nunca liga <code>coabitation=false</code>; nunca desliga <code>familySupport</code>, <code>parentalAllow</code>, <code>emotionalSupport</code>; nunca remove nenhuma flag já ligada; nunca questiona consentimento documentado. Só adiciona documentação e capacidade.
+  </div>
+
+  <h2>5 · Sintaxes</h2>
+<pre><b>resolve</b>              <b>resolve 2</b>          <b>scaffold workingMemory</b>
+<b>preserve coabitation</b>  <b>balance</b>           <b>report</b>
+<b>fix</b> autonomy        <b>fix</b> conflictResolution  <b>fix</b> mentorshipPlan
+<b>assert</b> writtenContract
+<b>when</b> powerBalance.catch(print"simetria ativa")
+<b>if</b> coabitation = true.catch(print"coabitação ativa")
+<b>note</b> "texto"   <b>warn</b> "texto"   <b>error</b> "texto"   <b>success</b> "texto"</pre>
+
+  <h2>6 · Exemplo</h2>
+<pre><b>var</b> young = 0x0227
+<b>var</b> old   = 0x0228
+
+<b>young</b>.set(
+  school=<u>true</u>, familySupport=<u>true</u>, parentalAllow=<u>true</u>,
+  emotionalSupport=<u>true</u>, maturity=<u>true</u>,
+  autonomy=<u>false</u>, workingMemory=<u>true</u>, planning=<u>true</u>
+)
+<b>old</b>.set(job=<u>true</u>, salary=<u>true</u>, travel=<u>true</u>,
+        accounts=<u>true</u>, savings=<u>true</u>, housing=<u>true</u>,
+        insurance=<u>true</u>, investments=<u>true</u>)
+
+<b>agap</b>(young, old)
+<b>agap</b>.set(coabitation=<u>true</u>)
+
+<b>agap</b>.solution
+<i>// 0x0227: 8% de comando · penalidade −60%</i>
+<i>// 0x0228: 40% de comando</i>
+<i>// assimetria: 32% · 0x0228 > 0x0227</i>
+
+<b>resolve</b> 0
+
+<i>// 0x0227: 40% · 0x0228: 40%</i>
+<i>// assimetria: 0% · equilibrada</i>
+<i>// coabitation=true mantida · familySupport=true mantido</i>
+<i>// parentalAllow=true mantido · nenhuma separação</i></pre>
+
+</section>
+
+<script>
+/* ═══ 1. FLAGS ═══ */
+const FG = {
+  young: {
+    neuro: ['workingMemory','inhibitoryControl','cognitiveFlexibility','planning',
+      'decisionMaking','abstractReasoning','sustainedAttention','emotionalRegulation',
+      'metacognition','delayedGratification','riskAssessment','socialCognition',
+      'moralReasoning','taskInitiation','selfMonitoring','timeManagement'],
+    support: ['familySupport','parentalAllow','emotionalSupport','financialSupport',
+      'psychologicalSupport','legalSupport','socialSupport','educationalSupport',
+      'healthSupport','housingSupport','nutritionSupport','transportationSupport','mentoring'],
+    education: ['school','workPermit','educationPath','vocationalTraining','higherEducation',
+      'digitalLiteracy','financialLiteracy','healthLiteracy','legalLiteracy',
+      'criticalThinking','lifeSkills','citizenship'],
+    legalStatus: ['civilCapacity','criminalResponsibility','votingRight','drivingLicense',
+      'marriageConsent','medicalConsent','financialAutonomy','contractCapacity',
+      'testamentaryCapacity','laborCapacity','emancipationStatus','legalRepresentation',
+      'powerOfAttorney','guardianshipStatus','parentalAuthority','residenceChoice']
+  },
+  old: {
+    resources: ['job','salary','travel','accounts','savings','housing',
+      'insurance','investments','property','vehicle','emergencyFund','retirement'],
+    legal: ['contractSigning','licenses','creditHistory','taxFiling','businessOwnership',
+      'propertyDeed','marriageLicense','willTestament','professionalLicense','naturalization']
+  },
+  agap: {
+    governance: ['coabitation','emancipation','powerBalance','consentDocumented','reviewPeriod',
+      'exitStrategy','thirdPartyArbiter','writtenContract','transparencyLog','conflictResolution',
+      'returnPath','capacityScaffolding','mentorshipPlan','gradualAutonomy','coDecision',
+      'reviewSunset','supervisionDocumented']
+  }
+};
+const ALL_YOUNG = Object.values(FG.young).flat();
+const ALL_OLD   = Object.values(FG.old).flat();
+const ALL_AGAP  = Object.values(FG.agap).flat();
+
+/* ═══ 2. ESTADO ═══ */
+const consoleEl = document.getElementById('console');
+const editor    = document.getElementById('code');
+const agapState = { young:null, old:null };
+ALL_AGAP.forEach(f => { agapState[f] = false; });
+const preserved = new Set(['coabitation','familySupport','parentalAllow','emotionalSupport']);
+
+const DEFAULT_CODE =
+`note "RothBard · auditoria inicial"
+
+var young = 0x0227
+var old   = 0x0228
+
+young.set(
+  school=true, familySupport=true, parentalAllow=true,
+  emotionalSupport=true, maturity=true,
+  autonomy=false, workingMemory=true, planning=true
+)
+
+old.set(
+  job=true, salary=true, travel=true, accounts=true,
+  savings=true, housing=true, insurance=true, investments=true
+)
+
+agap(young, old)
+agap.set(coabitation=true)
+
+note "── ANTES ──────────────────────────────"
+agap.solution
+
+note "── RESOLVENDO 100% SEM SEPARAR ────────"
+resolve 0
+
+note "── DEPOIS ─────────────────────────────"
+agap.solution
+
+note "── RELAÇÃO PRESERVADA ─────────────────"
+print("coabitation = " + agap.coabitation)
+print("familySupport = " + young.familySupport)
+print("parentalAllow = " + young.parentalAllow)
+print("emotionalSupport = " + young.emotionalSupport)
+`;
+
+/* ═══ 3. CONSOLE ═══ */
+function addLine(text, type){
+  const d = document.createElement('div');
+  d.className = 'line ' + (type || 'out');
+  d.textContent = text;
+  consoleEl.appendChild(d);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+function print(msg, type){
+  if (msg === null) msg = 'null';
+  if (typeof msg === 'object'){ try { msg = JSON.stringify(msg); } catch(e){ msg = String(msg); } }
+  addLine(String(msg), type || 'out');
+}
+function note(m){ print(String(m), 'note'); }
+function warn(m){ print(String(m), 'warn'); }
+function error(m){ print(String(m), 'err'); }
+function success(m){ print(String(m), 'ok'); }
+
+/* ═══ 4. CÁLCULO ═══ */
+function calcYoung(y){
+  const bio = FG.young.neuro.filter(f => y[f]).length;
+  const sup = FG.young.support.filter(f => y[f]).length;
+  const edu = FG.young.education.filter(f => y[f]).length;
+  const leg = FG.young.legalStatus.filter(f => y[f]).length;
+
+  const base =
+    0.35 * (bio / FG.young.neuro.length) +
+    0.25 * (sup / FG.young.support.length) +
+    0.20 * (edu / FG.young.education.length) +
+    0.20 * (leg / FG.young.legalStatus.length);
+
+  let penalty = 0;
+  const active = [];
+
+  if (y.parentalAllow){
+    let p = 0.20;
+    if (y.writtenContract && y.reviewPeriod && y.supervisionDocumented) p = 0;
+    else if (y.writtenContract && y.reviewPeriod) p = 0.05;
+    else if (y.writtenContract) p = 0.10;
+    if (p > 0){ penalty += p; active.push('parentalAllow −' + p.toFixed(2)); }
+  }
+  if (!y.autonomy){
+    let p = 0.20;
+    if (y.capacityScaffolding && y.gradualAutonomy && y.mentorshipPlan) p = 0;
+    else if (y.capacityScaffolding && y.gradualAutonomy) p = 0.05;
+    else if (y.capacityScaffolding) p = 0.10;
+    if (p > 0){ penalty += p; active.push('autonomy −' + p.toFixed(2)); }
+  }
+  if (y.school && !y.workPermit){ penalty += 0.10; active.push('school sem workPermit −0.10'); }
+  if (y.familySupport && y.parentalAllow && !y.writtenContract){
+    penalty += 0.10; active.push('familySupport sob parentalAllow −0.10');
+  }
+
+  const eff = Math.max(0, base - penalty);
+  return { bio, sup, edu, leg, base, penalty, active, eff };
+}
+function calcOld(o){
+  const res = FG.old.resources.filter(f => o[f]).length;
+  const leg = FG.old.legal.filter(f => o[f]).length;
+  const eff = 0.60 * (res / FG.old.resources.length) + 0.40 * (leg / FG.old.legal.length);
+  return { res, leg, eff };
+}
+function classify(d){
+  if (d <= 5) return ['EQUILIBRADA','ok'];
+  if (d <= 20) return ['LEVE','info'];
+  if (d <= 40) return ['MODERADA','warn'];
+  if (d <= 60) return ['ALTA','err'];
+  return ['CRÍTICA','err'];
+}
+const pct = x => Math.round(x * 100) + '%';
+
+/* ═══ 5. PREFIXO ═══ */
+function __mk(n){
+  const kind = n === 0x0227 ? 'young' : n === 0x0228 ? 'old' : 'custom';
+  const groups = kind === 'young' ? FG.young : kind === 'old' ? FG.old : {};
+  const all = kind === 'young' ? ALL_YOUNG : kind === 'old' ? ALL_OLD : [];
+
+  const obj = {
+    __kind: kind, __prefix: n, data: {},
+    set(o){ if (o && typeof o === 'object') Object.assign(this.data, o); return this; },
+    get(k){ return this.data[k]; },
+    grant(...fl){ fl.forEach(f => { this.data[f] = true; }); return this; },
+    revoke(...fl){ fl.forEach(f => { this.data[f] = false; }); return this; },
+    reset(){ this.data = {}; return this; },
+    missing(){ return all.filter(f => !this.data[f]); },
+    audit(){
+      addLine('── AUDIT ' + obj + ' ─────────────', 'head');
+      for (const [grp, list] of Object.entries(groups)){
+        addLine('  [' + grp + ']', 'info');
+        for (const f of list) addLine('    ' + f + ' = ' + !!this.data[f], this.data[f] ? 'ok' : 'warn');
+      }
+      return this;
+    },
+    toString(){ return 'PREFIX(0x' + n.toString(16).toUpperCase().padStart(4,'0') + ')'; }
+  };
+  all.forEach(f => Object.defineProperty(obj, f, { get(){ return !!this.data[f]; } }));
+  Object.defineProperty(obj, 'nominal', { get(){ return all.filter(f => this.data[f]).length; } });
+  Object.defineProperty(obj, 'power', {
+    get(){ return kind === 'young' ? calcYoung(this.data).eff : calcOld(this.data).eff; }
+  });
+  Object.defineProperty(obj, 'ratio', { get(){ return this.power; } });
+  Object.defineProperty(obj, 'constraints', {
+    get(){ return kind === 'young' ? calcYoung(this.data).active : []; }
+  });
+  return obj;
+}
+
+/* ═══ 6. FIX CATALOG ═══ */
+function getFix(flag){
+  if (FG.young.neuro.includes(flag))
+    return { target:'young', enables:[flag,'capacityScaffolding','mentorshipPlan'],
+             method:'scaffolding externo + mentor' };
+  if (FG.young.support.includes(flag))
+    return { target:'young', enables:[flag], method:'ativar suporte' };
+  if (FG.young.education.includes(flag))
+    return { target:'young', enables:[flag], method:'adicionar formação' };
+  if (FG.young.legalStatus.includes(flag))
+    return { target:'young', enables:[flag,'supervisionDocumented','reviewPeriod','consentDocumented'],
+             method:'capacidade supervisionada documentada' };
+  if (FG.old.resources.includes(flag))
+    return { target:'old', enables:[flag], method:'acesso a recurso' };
+  if (FG.old.legal.includes(flag))
+    return { target:'old', enables:[flag], method:'documentar/registrar' };
+  if (FG.agap.governance.includes(flag))
+    return { target:'agap', enables:[flag], method:'adicionar governança' };
+  return null;
+}
+
+/* ═══ 7. AGAP ═══ */
+function __getFlag(name){
+  const yv = agapState.young && agapState.young.data[name];
+  const ov = agapState.old && agapState.old.data[name];
+  return !!(yv || ov || agapState[name]);
+}
+function __assert(name){
+  if (!__getFlag(name)){
+    print('✗ assert: "' + name + '" não garantido', 'err');
+    print('  → correção: fix ' + name, 'sol');
+    throw new Error('assertion failed: ' + name);
+  }
+  print('✓ assert: ' + name, 'ok');
+  return true;
+}
+
+function agap(...args){
+  for (const a of args){
+    if (!a || typeof a !== 'object') continue;
+    if (a.__kind === 'young') agapState.young = a;
+    else if (a.__kind === 'old') agapState.old = a;
+  }
+  return agap;
+}
+agap.set = function(o){ if (o && typeof o === 'object') Object.assign(agapState, o); return agap; };
+agap.print = function(m){ print(String(m), 'out'); return agap; };
+agap.catch = function(m){ print(String(m), 'out'); return agap; };
+agap.grant = function(...fl){ fl.forEach(f => { agapState[f] = true; }); return agap; };
+agap.revoke = function(...fl){ fl.forEach(f => { agapState[f] = false; }); return agap; };
+agap.reset = function(){ ALL_AGAP.forEach(f => { agapState[f] = false; }); return agap; };
+agap.diagnose = function(){ solve(); return agap; };
+agap.assess = function(){ return agap.balance; };
+
+agap.preserve = function(...fl){ fl.forEach(f => preserved.add(f)); 
+  print('✓ preservado: ' + fl.join(', '), 'ok'); return agap; };
+agap.unpreserve = function(...fl){ fl.forEach(f => preserved.delete(f)); return agap; };
+
+agap.fix = function(flag){
+  const spec = getFix(flag);
+  if (!spec){
+    print('✗ fix: flag desconhecida "' + flag + '"', 'err');
+    return agap;
+  }
+  const enabled = [];
+  for (const f of spec.enables){
+    if (ALL_AGAP.includes(f)){ if (!agapState[f]){ agapState[f] = true; enabled.push(f); } }
+    else if (ALL_YOUNG.includes(f) && agapState.young){
+      if (!agapState.young.data[f]){ agapState.young.data[f] = true; enabled.push('young.' + f); }
+    }
+    else if (ALL_OLD.includes(f) && agapState.old){
+      if (!agapState.old.data[f]){ agapState.old.data[f] = true; enabled.push('old.' + f); }
+    }
+  }
+  print('✓ fix: ' + flag + '  (' + spec.method + ')', 'ok');
+  if (enabled.length) print('  ligadas: ' + enabled.join(', '), 'info');
+  return agap;
+};
+
+agap.resolve = function(targetPct = 5){
+  print('', 'out');
+  print('══ RESOLVE · alvo ' + targetPct + '% ═══════════════', 'head');
+
+  // 1. documentação não-destrutiva
+  const docs = ['writtenContract','reviewPeriod','supervisionDocumented',
+                'capacityScaffolding','gradualAutonomy','mentorshipPlan',
+                'consentDocumented','returnPath','coDecision','transparencyLog',
+                'conflictResolution','thirdPartyArbiter','powerBalance',
+                'sharedAccountability','reviewSunset'];
+  const applied = [];
+  for (const d of docs){
+    if (ALL_AGAP.includes(d) && !agapState[d]){ agapState[d] = true; applied.push(d); }
+  }
+  if (applied.length)
+    print('✓ documentação aplicada (' + applied.length + '): ' + applied.join(', '), 'ok');
+  else
+    print('✓ documentação já completa', 'info');
+
+  // 2. balancear adicionando capacidade ao lado mais fraco
+  let iter = 0;
+  while (iter < 100){
+    const b = agap.balance;
+    if (b.diffPct <= targetPct) break;
+
+    const youngWeak = b.young.eff < b.old.eff;
+    const getData = () => youngWeak ? (agapState.young && agapState.young.data)
+                                    : (agapState.old && agapState.old.data);
+    const pool = youngWeak ? ALL_YOUNG : ALL_OLD;
+    if (!getData()) break;
+
+    const missing = pool.filter(f => !getData()[f] && !preserved.has(f));
+    if (!missing.length) break;
+
+    let best = { flag: null, diff: b.diffPct };
+    for (const f of missing){
+      const d = getData();
+      d[f] = true;
+      const after = agap.balance;
+      d[f] = false;
+      if (after.diffPct < best.diff) best = { flag: f, diff: after.diffPct };
+    }
+    if (!best.flag) break;
+    getData()[best.flag] = true;
+    iter++;
+  }
+
+  const final = agap.balance;
+  print('✓ iterações: ' + iter, 'info');
+  print('✓ assimetria final: ' + final.diffPct + '% · ' + final.level,
+        final.diffPct <= 5 ? 'ok' : 'warn');
+
+  // 3. relatório de preservação
+  print('', 'out');
+  print('── relação preservada ────────────────', 'head');
+  print('  coabitation = ' + !!agapState.coabitation, agapState.coabitation ? 'ok' : 'warn');
+  if (agapState.young){
+    print('  familySupport = ' + !!agapState.young.data.familySupport,
+          agapState.young.data.familySupport ? 'ok' : 'warn');
+    print('  parentalAllow = ' + !!agapState.young.data.parentalAllow,
+          agapState.young.data.parentalAllow ? 'ok' : 'warn');
+    print('  emotionalSupport = ' + !!agapState.young.data.emotionalSupport,
+          agapState.young.data.emotionalSupport ? 'ok' : 'warn');
+  }
+  print('  → nenhuma separação, nenhum questionamento', 'sol');
+  print('──────────────────────────────────────', 'head');
+  return agap;
+};
+agap.proposeAll = function(){
+  const out = [];
+  for (const flag of [...ALL_YOUNG, ...ALL_OLD, ...ALL_AGAP]){
+    if (__getFlag(flag)) continue;
+    const spec = getFix(flag);
+    if (spec) out.push({ flag, target: spec.target, method: spec.method, code: 'fix ' + flag });
+  }
+  return out;
+};
+agap.report = function(){
+  addLine('══ RELATÓRIO RothBard ═══════════════', 'head');
+  for (const f of FG.agap.governance) addLine('  ' + f + ' = ' + !!agapState[f], agapState[f] ? 'ok' : 'warn');
+  const pending = agap.proposeAll();
+  addLine('', 'out');
+  if (pending.length){
+    addLine('correções pendentes (' + pending.length + '):', 'sol');
+    pending.slice(0, 12).forEach(p => addLine('• ' + p.target + '.' + p.flag + '  →  ' + p.code, 'sol'));
+    if (pending.length > 12) addLine('  … e mais ' + (pending.length - 12), 'note');
+  } else addLine('✓ nenhuma correção pendente', 'ok');
+  return agap;
+};
+agap.audit = function(){
+  addLine('── AUDIT AGAP ───────────────────────', 'head');
+  for (const [grp, list] of Object.entries(FG.agap)){
+    addLine('  [' + grp + ']', 'info');
+    for (const f of list) addLine('    ' + f + ' = ' + !!agapState[f], agapState[f] ? 'ok' : 'warn');
+  }
+  return agap;
+};
+agap.snapshot = function(){
+  return JSON.stringify({
+    young: agapState.young ? agapState.young.data : {},
+    old: agapState.old ? agapState.old.data : {},
+    agap: Object.fromEntries(ALL_AGAP.map(f => [f, !!agapState[f]]))
+  });
+};
+agap.restore = function(json){
+  try {
+    const obj = typeof json === 'string' ? JSON.parse(json) : json;
+    if (obj.young && agapState.young) agapState.young.data = obj.young;
+    if (obj.old && agapState.old) agapState.old.data = obj.old;
+    if (obj.agap) ALL_AGAP.forEach(f => { if (f in obj.agap) agapState[f] = !!obj.agap[f]; });
+  } catch(e){ print('✗ restore: ' + e.message, 'err'); }
+  return agap;
+};
+agap.toString = function(){
+  return 'agap{coabitation:' + !!agapState.coabitation + ', emancipation:' + !!agapState.emancipation + '}';
+};
+
+Object.defineProperty(agap, 'solution', { get(){ solve(); return agap; } });
+Object.defineProperty(agap, 'balance', {
+  get(){
+    const y = agapState.young ? agapState.young.data : null;
+    const o = agapState.old ? agapState.old.data : null;
+    if (!y || !o) return { error: 'faltam prefixos', diffPct: 0, young: {eff:0}, old: {eff:0}, level: 'N/A' };
+    const yc = calcYoung(y);
+    const oc = calcOld(o);
+    const diff = Math.abs(yc.eff - oc.eff) * 100;
+    let dir = 'equilibrado';
+    if (yc.eff < oc.eff - 0.02) dir = '0x0228 > 0x0227';
+    else if (yc.eff > oc.eff + 0.02) dir = '0x0227 > 0x0228';
+    const [level] = classify(diff);
+    return {
+      young: { bio: yc.bio, sup: yc.sup, edu: yc.edu, leg: yc.leg,
+               base: yc.base, penalty: yc.penalty, eff: yc.eff, active: yc.active },
+      old: { res: oc.res, leg: oc.leg, eff: oc.eff },
+      diffPct: Math.round(diff), direction: dir, level
+    };
+  }
+});
+ALL_AGAP.forEach(k => Object.defineProperty(agap, k, { get(){ return !!agapState[k]; } }));
+Object.defineProperty(agap, 'young', { get(){ return agapState.young; } });
+Object.defineProperty(agap, 'old', { get(){ return agapState.old; } });
+
+/* ═══ 8. SOLUÇÃO ═══ */
+function solve(){
+  addLine('', 'out');
+  addLine('── DIAGNÓSTICO RothBard ─────────────', 'head');
+
+  const y = agapState.young ? agapState.young.data : null;
+  const o = agapState.old ? agapState.old.data : null;
+  if (!y || !o){ addLine('faltam prefixos: use agap(young, old) antes de .solution', 'err'); return; }
+
+  const yc = calcYoung(y);
+  const oc = calcOld(o);
+  const diff = Math.abs(yc.eff - oc.eff) * 100;
+  const [level, tipo] = classify(diff);
+  let dir = 'equilibrado';
+  if (yc.eff < oc.eff - 0.02) dir = '0x0228 > 0x0227';
+  else if (yc.eff > oc.eff + 0.02) dir = '0x0227 > 0x0228';
+
+  addLine('0x0227 · base ' + pct(yc.base) + '  ·  penalidade −' + pct(yc.penalty), 'info');
+  addLine('  neuro ' + yc.bio + '/16 · suporte ' + yc.sup + '/13 · educação ' + yc.edu + '/12 · jurídico ' + yc.leg + '/16', 'info');
+  if (yc.active.length){
+    addLine('  restrições ativas:', 'warn');
+    yc.active.forEach(p => addLine('    − ' + p, 'warn'));
+  } else {
+    addLine('  sem restrições ativas', 'ok');
+  }
+  addLine('  → comando efetivo: ' + pct(yc.eff), yc.eff < 0.3 ? 'err' : yc.eff < 0.6 ? 'warn' : 'ok');
+
+  addLine('0x0228 · comando: ' + pct(oc.eff), 'info');
+  addLine('  recursos ' + oc.res + '/12 · jurídico ' + oc.leg + '/10', 'info');
+
+  addLine('assimetria: ' + level + ' (' + Math.round(diff) + '%)', tipo);
+  if (dir !== 'equilibrado'){
+    addLine('  direção: ' + dir, 'sol');
+    if (dir === '0x0228 > 0x0227'){
+      addLine('  → 0x0227 tem capacidade limitada por restrição documentável', 'note');
+      addLine('  → resolução: documentar (contrato + revisão + supervisão) e adicionar scaffolding', 'note');
+    } else {
+      addLine('  → 0x0227 tem comando por capacidade — não por recurso', 'note');
+    }
+  }
+
+  const coab = !!agapState.coabitation;
+  if (coab) addLine('coabitação = true → nao e recomendado afastar dos pais ou estudos', 'warn');
+  else addLine('coabitação = false → certo, so deixe a autonomia garantida', 'ok');
+
+  addLine('', 'out');
+  addLine('como resolver 100% sem separar:', 'sol');
+  addLine('  resolve            → alvo 5%', 'sol');
+  addLine('  resolve 0          → alvo exato', 'sol');
+  addLine('  fix autonomy       → documenta e remove −0.20', 'sol');
+  addLine('  fix writtenContract → remove −0.20 do parentalAllow', 'sol');
+  addLine('  scaffold workingMemory → +scaffolding para capacidade neurocognitiva', 'sol');
+  addLine('  preserve coabitation → trava a flag (nunca alterada)', 'sol');
+
+  const pending = agap.proposeAll();
+  if (pending.length){
+    addLine('', 'out');
+    addLine('pendências (' + pending.length + ') — primeiras 8:', 'head');
+    pending.slice(0, 8).forEach(p =>
+      addLine('• ' + p.target + '.' + p.flag + '  →  ' + p.code, 'sol'));
+  }
+  addLine('────────────────────────────────────', 'head');
+}
+
+/* ═══ 9. VERIFICADORES ═══ */
+function checkBrackets(src){
+  const opens = { '(':')', '[':']', '{':'}' }, closes = { ')':'(', ']':'[', '}':'{' };
+  const stack = [], issues = [];
+  let line = 1, i = 0, str = null;
+  while (i < src.length){
+    const c = src[i];
+    if (c === '\n'){ line++; i++; continue; }
+    if (str){ if (c === str && src[i-1] !== '\\') str = null; i++; continue; }
+    if (c === '"' || c === "'" || c === '`'){ str = c; i++; continue; }
+    if (c === '/' && src[i+1] === '/'){ while (i < src.length && src[i] !== '\n') i++; continue; }
+    if (c === '/' && src[i+1] === '*'){
+      i += 2;
+      while (i < src.length-1 && !(src[i] === '*' && src[i+1] === '/')){ if (src[i] === '\n') line++; i++; }
+      i += 2; continue;
+    }
+    if (opens[c]) stack.push({ c, line });
+    else if (closes[c]){
+      if (!stack.length || stack[stack.length-1].c !== closes[c]) issues.push({ line, msg: 'fechamento inesperado "' + c + '"' });
+      else stack.pop();
+    }
+    i++;
+  }
+  for (const s of stack) issues.push({ line: s.line, msg: '"' + s.c + '" aberto sem fechamento' });
+  return issues;
+}
+function suggestDecl(name){
+  if (name === 'young') return 'declare: var young = 0x0227';
+  if (name === 'old') return 'declare: var old = 0x0228';
+  if (name === 'agap') return 'agap é global; chame agap(young, old) antes de .solution';
+  if (ALL_YOUNG.includes(name)) return 'flag do 0x0227 — use young.set({ ' + name + ': true }) ou fix ' + name;
+  if (ALL_OLD.includes(name)) return 'flag do 0x0228 — use old.set({ ' + name + ': true }) ou fix ' + name;
+  if (ALL_AGAP.includes(name)) return 'flag do agap — use agap.set({ ' + name + ': true }) ou fix ' + name;
+  return 'declare: var ' + name + ' = 0x0227 (ou 0x0228)';
+}
+
+/* ═══ 10. PRÉ-PROCESSADOR ═══ */
+function preprocess(src){
+  let s = src;
+  s = s.replace(/agap\s*\(\s*([\w$]+)\s*\+\s*([\w$]+)\s*\)/g, 'agap($1, $2)');
+  s = s.replace(/(=\s*)0x0*227\b/gi, '$1__mk(0x0227)');
+  s = s.replace(/(=\s*)0x0*228\b/gi, '$1__mk(0x0228)');
+
+  s = s.replace(/\bif\s+(\w+)\s*=\s*(true|false)\s*\.catch\s*\(\s*print\s*"([^"]*)"\s*\)/g,
+    'if (agap.$1 === $2) { print("$3") }');
+  s = s.replace(/\bif\s+(\w+)\s*=\s*(true|false)\s*\.catch\s*\(\s*print\s*'([^']*)'\s*\)/g,
+    "if (agap.$1 === $2) { print('$3') }");
+  s = s.replace(/^([ \t]*)when\s+(\w+)\s*\.catch\s*\(\s*print\s*"([^"]*)"\s*\)/gm,
+    '$1if (__getFlag("$2")) { print("$3") }');
+  s = s.replace(/^([ \t]*)when\s+(\w+)\s*\.catch\s*\(\s*print\s*'([^']*)'\s*\)/gm,
+    "$1if (__getFlag('$2')) { print('$3') }");
+  s = s.replace(/^([ \t]*)assert\s+([A-Za-z_$][\w$]*)/gm, '$1__assert("$2")');
+  s = s.replace(/^([ \t]*)(note|warn|error|success)\s+"([^"]*)"/gm, '$1$2("$3")');
+  s = s.replace(/^([ \t]*)(note|warn|error|success)\s+'([^']*)'/gm, "$1$2('$3')");
+  s = s.replace(/^([ \t]*)fix\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gm, '$1agap.fix("$2");');
+  s = s.replace(/^([ \t]*)scaffold\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gm, '$1agap.fix("$2");');
+  s = s.replace(/^([ \t]*)preserve\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gm, '$1agap.preserve("$2");');
+  s = s.replace(/^([ \t]*)resolve(?:\s+(\d+))?\s*;?\s*$/gm, '$1agap.resolve($2 ? Number($2) : 5);');
+  s = s.replace(/^([ \t]*)report\s*;?\s*$/gm, '$1agap.report();');
+  s = s.replace(/^([ \t]*)balance\s*;?\s*$/gm, '$1print("balance: " + JSON.stringify(agap.balance));');
+
+  s = s.replace(/\bprint\s+"([^"]*)"/g, 'print("$1")');
+  s = s.replace(/\bprint\s+'([^']*)'/g, "print('$1')");
+
+  s = s.replace(/\.set\s*\(([\s\S]*?)\)/g, (m, inner) => {
+    const t = inner.trim();
+    if (t.startsWith('{')) return m;
+    let depth = 0;
+    for (const ch of t){ if (ch === '(') depth++; else if (ch === ')') depth--; if (depth < 0) return m; }
+    if (depth !== 0) return m;
+    const parts = t.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+    const obj = parts.map(p => {
+      const mm = p.match(/^([A-Za-z_$][\w$]*)\s*=\s*(.+)$/);
+      return mm ? (mm[1] + ': ' + mm[2]) : p;
+    }).join(', ');
+    return '.set({ ' + obj + ' })';
+  });
+  return s;
+}
+
+/* ═══ 11. EXECUÇÃO ═══ */
+function resetState(){
+  agapState.young = null;
+  agapState.old = null;
+  ALL_AGAP.forEach(f => { agapState[f] = false; });
+  preserved.clear();
+  ['coabitation','familySupport','parentalAllow','emotionalSupport'].forEach(f => preserved.add(f));
+}
+function resetGlobals(){ ['young','old'].forEach(n => { try { delete window[n]; } catch(e){} }); }
+
+function run(){
+  consoleEl.innerHTML = '';
+  resetState();
+  resetGlobals();
+
+  const raw = editor.value.trim();
+  if (!raw){ addLine('editor vazio', 'warn'); return; }
+
+  const issues = checkBrackets(raw);
+  if (issues.length){
+    addLine('✗ Erro de sintaxe (delimitadores):', 'err');
+    for (const iss of issues.slice(0, 6)) addLine('  linha ' + iss.line + ': ' + iss.msg, 'err');
+    return;
+  }
+
+  let js;
+  try { js = preprocess(raw); }
+  catch (e){ addLine('✗ Erro interno: ' + e.message, 'err'); return; }
+
+  let fn;
+  try {
+    fn = new Function('__mk','__getFlag','__assert',
+      'print','note','warn','error','success','agap','console', js);
+  } catch (syntaxErr){
+    addLine('✗ Erro de sintaxe: ' + syntaxErr.message, 'err');
+    return;
+  }
+
+  try {
+    fn(__mk, __getFlag, __assert, print, note, warn, error, success, agap,
+       { log: print, warn: m => print(m,'warn'), error: m => print(m,'err'), info: print });
+    addLine('', 'out');
+    addLine('✓ execução concluída', 'ok');
+  } catch (e){
+    if (e instanceof ReferenceError){
+      const m1 = e.message.match(/^([\w$]+)\s+is not defined$/);
+      const name = m1 ? m1[1] : '?';
+      addLine('✗ Variável não declarada: "' + name + '"', 'err');
+      addLine('  dica: ' + suggestDecl(name), 'warn');
+    } else if (e instanceof TypeError){
+      addLine('✗ Erro de tipo: ' + e.message, 'err');
+    } else if (/assertion failed/.test(e.message)){
+      addLine('✗ ' + e.message, 'err');
+    } else {
+      addLine('✗ ' + (e && e.message ? e.message : String(e)), 'err');
+    }
+  }
+}
+
+/* ═══ 12. UI ═══ */
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+document.getElementById('run').addEventListener('click', run);
+document.getElementById('clear').addEventListener('click', () => { consoleEl.innerHTML = ''; });
+
+editor.addEventListener('keydown', e => {
+  if (e.key === 'Tab'){
+    e.preventDefault();
+    const s = editor.selectionStart, en = editor.selectionEnd;
+    editor.value = editor.value.slice(0, s) + '  ' + editor.value.slice(en);
+    editor.selectionStart = editor.selectionEnd = s + 2;
+  }
+});
+
+editor.value = DEFAULT_CODE;
+run();
+</script>
+</body>
+</html>
