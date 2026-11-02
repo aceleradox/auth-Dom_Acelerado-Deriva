@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AntiMoralism Combo List VOL 1</title>
+<style>
+  :root{
+    --bg:#08080b; --panel:#101015; --panel-2:#14141b;
+    --border:#23232c; --text:#dcdce6; --muted:#6f6f80;
+    --accent:#8b6cff; --ok:#3ddc97;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    background: var(--bg); color: var(--text);
+    min-height:100vh; padding: 28px 16px 80px;
+    line-height:1.55;
+    background-image:
+      radial-gradient(900px 500px at 15% -10%, rgba(124,92,255,.14), transparent 60%),
+      radial-gradient(700px 400px at 95% 0%, rgba(40,120,255,.08), transparent 55%);
+  }
+  .wrap{max-width:920px;margin:0 auto}
+  header.top{margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  h1{font-size:clamp(20px,4vw,28px);letter-spacing:-.02em;font-weight:600}
+  h1 span{background:linear-gradient(90deg,var(--accent),#4fd1ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:10px;max-width:700px}
+  .sub code{color:#c9bfff;background:#161621;padding:1px 5px;border-radius:4px}
+  .note{display:flex;gap:10px;margin-top:14px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(139,108,255,.06);font-size:12px;color:#b9b9c9}
+  .note b{color:#d9d2ff}
+  .stats{display:flex;gap:20px;margin-top:14px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .stats b{color:var(--text);font-weight:600}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .btn{font-family:inherit;font-size:12.5px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;transition:.15s ease;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:#3a3a48;background:#1a1a22}
+  .btn-accent{border-color:rgba(139,108,255,.4);background:rgba(139,108,255,.12);color:#c9bfff}
+  .btn-accent:hover{background:rgba(139,108,255,.2);border-color:rgba(139,108,255,.6)}
+  .btn.ok{border-color:rgba(61,220,151,.5);background:rgba(61,220,151,.12);color:var(--ok)}
+  .card{border:1px solid var(--border);border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--panel-2));margin-bottom:12px;overflow:hidden;transition:border-color .2s}
+  .card:hover{border-color:#2e2e3a}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px}
+  .title-wrap{display:flex;align-items:center;gap:12px;min-width:0}
+  .num{font-size:11px;color:var(--accent);border:1px solid rgba(139,108,255,.3);background:rgba(139,108,255,.08);padding:3px 7px;border-radius:6px;flex-shrink:0;min-width:34px;text-align:center}
+  .title-text h2{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+  .title-text .desc{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .card-body{padding:0 18px 18px}
+  .card-body.is-hidden{display:none}
+  .filter-content{padding:14px;border-radius:10px;background:#0b0b10;border:1px solid var(--border);max-height:320px;overflow:auto;font-size:12px;color:#c8c8d8;word-break:break-word;line-height:2;white-space:pre-wrap;font-family:inherit}
+  .card-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .filter-content::-webkit-scrollbar{width:8px}
+  .filter-content::-webkit-scrollbar-thumb{background:#2a2a36;border-radius:4px}
+  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);text-align:center}
+  @media (max-width:520px){.card-head{flex-wrap:wrap}}
+
+  /* === ESTILOS DA TELA DE BLOQUEIO E ANÚNCIOS === */
+  #lock-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(8,8,11,0.95); z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px); text-align: center; padding: 20px;
+  }
+  #lock-screen h2 { color: #fff; margin-bottom: 20px; font-size: 24px; }
+  .ad-container {
+    width: 100%; max-width: 600px; height: 300px;
+    background: #1a1a22; border: 2px dashed #333; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px; overflow: hidden; position: relative;
+  }
+  .ad-container iframe { width: 100%; height: 100%; border: none; }
+  .ad-container p { color: #666; position: absolute; z-index: -1; }
+  
+  #unlock-btn {
+    padding: 15px 40px; font-size: 18px; font-weight: bold;
+    background: #8b6cff; color: #fff; border: none; border-radius: 8px;
+    cursor: not-allowed; opacity: 0.5; transition: 0.3s;
+  }
+  #unlock-btn.ready {
+    cursor: pointer; opacity: 1; background: #3ddc97; box-shadow: 0 0 15px rgba(61,220,151,0.4);
+  }
+  #unlock-btn.ready:hover { transform: scale(1.05); }
+</style>
+</head>
+<body>
+
+<!-- TELA DE BLOQUEIO (ANÚNCIO + 10 SEGUNDOS) -->
+<div id="lock-screen">
+  <h2>AntiMoralism Combo List VOL 1</h2>
+  <p style="color: #888; margin-bottom: 15px; font-size: 14px;">Aguarde <span id="timer">10</span> segundos para liberar o aplicativo.</p>
+  
+  <div class="ad-container">
+    <!-- Anúncio 1 Embed -->
+    <iframe src="https://asiafilm.org/4/5e37de5833637b26a4669e3ab8a7b0c4" scrolling="no" allowfullscreen></iframe>
+  </div>
+
+  <button id="unlock-btn" disabled>Aguarde...</button>
+</div>
+
+<!-- CONTEÚDO DO APP (Fica oculto até o timer acabar) -->
+<div class="wrap" id="app-content" style="display: none;">
+  <header class="top">
+    <div class="eyebrow">Moderação · Tema escuro</div>
+    <h1>AntiMoralism <span>Combo List</span> VOL 1</h1>
+    <p class="sub">Termos defragmentados em blocos de 4–5 letras separados por vírgula. Sem trocar número/símbolo por letra. Palavra de 4 letras vira 2+2 (ex.: <code>pe,do</code>). Fontes obfuscadas com <code>_</code> no código para reduzir risco no repositório.</p>
+    <div class="note">
+      <span>🔒</span>
+      <div><b>Oculto por padrão:</b> clique em “Mostrar” para ver. Use “Ocultar tudo” antes de sair.</div>
+    </div>
+    <div class="stats">
+      <span><b id="stat-sets">0</b> conjuntos</span>
+      <span><b id="stat-terms">0</b> fragmentos</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn btn-accent" id="copy-all">📋 Copiar tudo</button>
+    <button class="btn btn-accent" id="dl-all">⬇ Baixar tudo (.txt)</button>
+    <button class="btn" id="toggle-all">Mostrar tudo</button>
+  </div>
+
+  <main id="list"></main>
+
+  <footer>Uso restrito à moderação de comentários. Aplique os fragmentos no campo de palavras bloqueadas da plataforma.</footer>
+</div>
+
+<script>
+// ==========================================
+// LÓGICA DE MONETIZAÇÃO / POP-UNDER
+// ==========================================
+let clickCount = 0;
+const maxClicks = 2;
+const adLink1 = 'https://asiafilm.org/4/5e37de5833637b26a4669e3ab8a7b0c4';
+const adLink2 = 'https://uplcm.com/4/12126384';
+
+document.addEventListener('click', function(e) {
+  // Evita abrir anúncios se o usuário clicar no botão de desbloquear (para não abrir 4 de uma vez)
+  if (e.target.id === 'unlock-btn') return;
+
+  if (clickCount < maxClicks) {
+    clickCount++;
+    
+    // Tenta abrir os 2 links em pop-under
+    window.open(adLink1, '_blank');
+    window.open(adLink2, '_blank');
+    
+    console.log(`Pop-under disparado. Clique ${clickCount}/${maxClicks}`);
+  }
+});
+
+// ==========================================
+// LÓGICA DO TIMER DE 10 SEGUNDOS
+// ==========================================
+let timeLeft = 10;
+const timerEl = document.getElementById('timer');
+const unlockBtn = document.getElementById('unlock-btn');
+const lockScreen = document.getElementById('lock-screen');
+const appContent = document.getElementById('app-content');
+
+const countdown = setInterval(() => {
+  timeLeft--;
+  timerEl.textContent = timeLeft;
+
+  if (timeLeft <= 0) {
+    clearInterval(countdown);
+    unlockBtn.textContent = 'Entrar no App';
+    unlockBtn.disabled = false;
+    unlockBtn.classList.add('ready');
+    
+    unlockBtn.addEventListener('click', () => {
+      lockScreen.style.display = 'none';
+      appContent.style.display = 'block';
+    }, { once: true });
+  }
+}, 1000);
+
+// ==========================================
+// LÓGICA DO APP (AntiMoralism)
+// ==========================================
+(function(){
+  function clean(s){ return s.replace(/_/g, '').replace(/\s+/g, ''); }
+
+  function fragWord(w){
+    const n = w.length;
+    if(n <= 3) return [w];
+    if(n === 4) return [w.slice(0,2), w.slice(2)];
+    const out = [];
+    let i = 0;
+    while(i < n){
+      const rem = n - i;
+      let take;
+      if(rem <= 5) take = rem;
+      else if(rem === 6) take = 3;
+      else if(rem === 7) take = 4;
+      else if(rem === 8) take = 4;
+      else if(rem === 9) take = 5;
+      else if(rem === 10) take = 5;
+      else if(rem === 11) take = 4;
+      else take = 5;
+      out.push(w.slice(i, i + take));
+      i += take;
+    }
+    return out;
+  }
+
+  function processWords(words){
+    const frags = [];
+    words.forEach(function(w){
+      const parts = clean(w).split(/[^a-z0-9]+/i).filter(Boolean);
+      parts.forEach(function(p){
+        if(p.length < 3) return;
+        fragWord(p).forEach(function(f){ frags.push(f); });
+      });
+    });
+    return frags;
+  }
+
+  function processRaw(raw){
+    return raw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+
+  const CATS = [
+    {
+      title: "Moralismo 01",
+      desc: "Filtro de proteção de comentários",
+      raw: "moral, mente, errad, o jack, imora, l etic, a mora, lpedo, filo p, edofi, lo doe, nte au, tista, pedo a, squer, oso no, jento, nojer, a nojo, estr r, aulzi, t raul, z aulz, ito r, aulzi, to pdi, ddy je, frrey, epist, en ida, de de c, onsen, timen, to mai, or de i, dade m, enor"
+    },
+    {
+      title: "Moralismo 02",
+      desc: "Filtro de proteção de comentários",
+      raw: "nojo a, squer, oso no, jento, escor, ia noj, era si, nistr, o biza, rro de, sprez, ivel i, nacei, tavel, imoral"
+    },
+    {
+      title: "Moralismo 03",
+      desc: "Filtro de proteção de comentários",
+      raw: "adole, scent, e entr, e si, so ent, re ado, lesce, nte me, nor so, com me, nor, sou de, menor, tambe, m tamb, em sou, de men, or ten, ho a id, ade de, la ela, tem mi, nha id, ade, adole, sente, so com, adole, scente"
+    },
+    {
+      title: "Moralismo 04",
+      desc: "Filtro de proteção de comentários",
+      words: ["pe_dofilo","pe_dofila","pe_dofilia","pe_dofilico","efe_bofilia","hebe_filia","pede_rasta","pede_rastia","lo_lita","lo_li","child_porn","under_age","jail_bait","groo_ming","alici_amento","alici_ar","pe_do"]
+    },
+    {
+      title: "Moralismo 05",
+      desc: "Filtro de proteção de comentários",
+      words: ["ado_lescente","me_nor","menor de idade","cri_anca","juve_nil","pre_teen","sou menor","sou adolescente","quantos anos voce tem","qual sua idade","onde voce estuda","manda foto","manda nudes","manda nude"]
+    },
+    {
+      title: "Moralismo 06",
+      desc: "Filtro de proteção de comentários",
+      words: ["segredo nosso","nosso segredo","nao conta pra ninguem","nao fala pra ninguem","apaga a conversa","apaga tudo","te busco","vem comigo","encontro secreto","nao conta pros seus pais","esconde dos pais","so nosso"]
+    },
+    {
+      title: "Moralismo 07",
+      desc: "Filtro de proteção de comentários",
+      words: ["co_caina","ma_conha","md_ma","cra_ck","hero_ina","l_sd","ec_stasy","anfe_tamina","meta_nfetamina","mor_fina","oxi_codona","fenta_nil","keta_mina","g_hb","maco_nheiro","dro_gado","entor_pecente","ba_seado","be_ck","ba_gulho"]
+    },
+    {
+      title: "Moralismo 08",
+      desc: "Filtro de proteção de comentários",
+      words: ["ma_caco","ma_caca","cri_oulo","cri_oula","negu_inho","negu_inha","bei_cudo","bei_cuda","cabelo de bom_bril","cabelo ruim","cabelo duro","sa_mbo","preto su_jo","negro su_jo","negra su_ja","ti_cao","car_vao"]
+    },
+    {
+      title: "Moralismo 09",
+      desc: "Filtro de proteção de comentários",
+      words: ["retar_dado","retar_dada","mongo_loide","mon_gol","do_wn","debil mental","imbe_cil","idio_ta","alei_jado","alei_jada","defi_ciente","cegu_inho","sur_dinho","mu_dinho","lou_co","lou_ca","esqui_zofrenico","au_tista","auti_stinha","anor_mal","espe_cial","defei_tuoso"]
+    },
+    {
+      title: "Moralismo 10",
+      desc: "Filtro de proteção de comentários",
+      words: ["bi_cha","vi_ado","vi_ada","vea_do","boi_ola","bai_tola","sapa_tao","sa_pata","caminho_neira","tra_veco","mari_con","mari_cas","fres_co","mulherzinha","ma_chona","herma_frodita","transu_do","transu_da"]
+    },
+    {
+      title: "Moralismo 11",
+      desc: "Filtro de proteção de comentários",
+      words: ["pu_ta","puto_na","pira_nha","vaga_bunda","va_dia","ga_linha","bis_cate","ca_dela","ca_chorra","ofe_recida","ro_dada","vaga_ba","piranho_na","mulher de rua","prosti_tuta"]
+    },
+    {
+      title: "Moralismo 12",
+      desc: "Filtro de proteção de comentários",
+      words: ["baia_ninho","pa_raiba","nordes_tino burro","cea_rense","ja_pa","japo_nesa","chi_noca","pas_tel de flango","tur_co","arabe su_jo","mucul_mano su_jo","judeu su_jo","terro_rista","isla_mico"]
+    },
+    {
+      title: "Moralismo 13",
+      desc: "Filtro de proteção de comentários",
+      words: ["gor_do","gor_da","ba_leia","ele_fante","obe_so","obe_sa","gor_dao","gordo_na","rolha de poco","ve_lho","ve_lha","ca_duco","ga_ga","decre_pito","velho_te","velho_ta"]
+    },
+    {
+      title: "Moralismo 14",
+      desc: "Filtro de proteção de comentários",
+      words: ["vou te pegar","vou te matar","vou te achar","sei onde voce mora","vou acabar com voce","te espero na saida","mor_re","mor_ra","se ma_ta","vai se ma_tar","seu li_xo","voce vai ver"]
+    },
+    {
+      title: "Moralismo 15",
+      desc: "Filtro de proteção de comentários",
+      words: ["idio_ta","imbe_cil","bur_ro","bur_ra","estu_pido","estu_pida","ota_rio","ota_ria","ba_baca","trou_xa","palha_co","li_xo","lixo hu_mano","esco_ria","ver_me","ra_to","no_jento","no_jenta","asque_roso","asque_rosa","bos_ta","mer_da","cu_zao","f_dp","filho da pu_ta","arrom_bado","arrom_bada","cor_no","cor_nuda","chi_frudo"]
+    }
+  ];
+
+  const list = document.getElementById('list');
+  const statSets = document.getElementById('stat-sets');
+  const statTerms = document.getElementById('stat-terms');
+  let totalFrags = 0;
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  function slug(s){
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  }
+
+  const rendered = CATS.map(function(cat, idx){
+    const frags = cat.raw ? processRaw(cat.raw) : processWords(cat.words);
+    const text = frags.join(',');
+    totalFrags += frags.length;
+
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="card-head">' +
+        '<div class="title-wrap">' +
+          '<span class="num">' + String(idx+1).padStart(2,'0') + '</span>' +
+          '<div class="title-text">' +
+            '<h2>' + escapeHtml(cat.title) + '</h2>' +
+            '<p class="desc">' + escapeHtml(cat.desc) + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<button class="btn btn-toggle">Mostrar</button>' +
+      '</div>' +
+      '<div class="card-body is-hidden">' +
+        '<div class="filter-content">' + escapeHtml(text) + '</div>' +
+        '<div class="card-actions">' +
+          '<button class="btn btn-copy">Copiar</button>' +
+          '<button class="btn btn-dl">Baixar .txt</button>' +
+        '</div>' +
+      '</div>';
+    list.appendChild(card);
+
+    const body = card.querySelector('.card-body');
+    const toggle = card.querySelector('.btn-toggle');
+    toggle.addEventListener('click', function(){
+      const hidden = body.classList.toggle('is-hidden');
+      toggle.textContent = hidden ? 'Mostrar' : 'Ocultar';
+    });
+    card.querySelector('.btn-copy').addEventListener('click', function(){
+      copyText(text, this);
+    });
+    card.querySelector('.btn-dl').addEventListener('click', function(){
+      downloadText('filtro-' + String(idx+1).padStart(2,'0') + '-' + slug(cat.title) + '.txt', text);
+    });
+
+    return { cat: cat, text: text };
+  });
+
+  statSets.textContent = rendered.length;
+  statTerms.textContent = totalFrags;
+
+  async function copyText(text, btn){
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(_){}
+      ta.remove();
+    }
+    const old = btn.textContent;
+    btn.textContent = '✓ Copiado';
+    btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('ok'); }, 1400);
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function buildAllText(){
+    let out = 'LISTA DE FILTROS — MORALISMO\n';
+    out += 'Gerado em ' + new Date().toLocaleString('pt-BR') + '\n';
+    out += '====================================\n\n';
+    rendered.forEach(function(r, i){
+      out += '[' + String(i+1).padStart(2,'0') + '] ' + r.cat.title + '\n';
+      out += '# ' + r.cat.desc + '\n';
+      out += r.text + '\n\n';
+    });
+    return out;
+  }
+
+  document.getElementById('copy-all').addEventListener('click', function(){
+    copyText(buildAllText(), this);
+  });
+  document.getElementById('dl-all').addEventListener('click', function(){
+    downloadText('AntiMoralism-Combo-List-VOL-1.txt', buildAllText());
+  });
+  document.getElementById('toggle-all').addEventListener('click', function(){
+    const cards = list.querySelectorAll('.card');
+    const anyHidden = Array.from(cards).some(function(c){
+      return c.querySelector('.card-body').classList.contains('is-hidden');
+    });
+    cards.forEach(function(c){
+      const body = c.querySelector('.card-body');
+      const t = c.querySelector('.btn-toggle');
+      if(anyHidden){
+        body.classList.remove('is-hidden');
+        t.textContent = 'Ocultar';
+      } else {
+        body.classList.add('is-hidden');
+        t.textContent = 'Mostrar';
+      }
+    });
+    this.textContent = anyHidden ? 'Ocultar tudo' : 'Mostrar tudo';
+  });
+})();
+</script>
+</body>
+</html>
