@@ -21,7 +21,7 @@
       radial-gradient(700px 400px at 95% 0%, rgba(40,120,255,.08), transparent 55%);
   }
   .wrap{max-width:920px;margin:0 auto}
-  header.top{margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+  header.top{margin-bottom:22px;padding-bottom:22px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
   h1{font-size:clamp(20px,4vw,28px);letter-spacing:-.02em;font-weight:600}
   h1 span{background:linear-gradient(90deg,var(--accent),#4fd1ff);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -101,7 +101,7 @@
   <header class="top">
     <div class="eyebrow">Moderação · Tema escuro</div>
     <h1>AntiMoralism <span>Combo List</span> VOL 1</h1>
-    <p class="sub">Termos defragmentados em blocos de 4–5 letras separados por vírgula. Sem trocar número/símbolo por letra. Palavra de 4 letras vira 2+2 (ex.: <code>po,ha</code>).
+    <p class="sub">Termos defragmentados em blocos de 4–5 letras separados por vírgula. Sem trocar número/símbolo por letra. Palavra de 4 letras vira 2+2 (ex.: <code>po,ha</code>). Fontes obfuscadas com virgula.</p>
     <div class="note">
       <span>🔒</span>
       <div><b>Oculto por padrão:</b> clique em “Mostrar” para ver. Use “Ocultar tudo” antes de sair.</div>
@@ -124,29 +124,6 @@
 </div>
 
 <script>
-// ==========================================
-// LÓGICA DE MONETIZAÇÃO / POP-UNDER
-// ==========================================
-let clickCount = 0;
-const maxClicks = 2;
-const adLink1 = 'https://asiafilm.org/4/5e37de5833637b26a4669e3ab8a7b0c4';
-const adLink2 = 'https://uplcm.com/4/12126384';
-
-document.addEventListener('click', function(e) {
-  // Evita abrir anúncios se o usuário clicar no botão de desbloquear (para não abrir 4 de uma vez)
-  if (e.target.id === 'unlock-btn') return;
-
-  if (clickCount < maxClicks) {
-    clickCount++;
-    
-    // Tenta abrir os 2 links em pop-under
-    window.open(adLink1, '_blank');
-    window.open(adLink2, '_blank');
-    
-    console.log(`Pop-under disparado. Clique ${clickCount}/${maxClicks}`);
-  }
-});
-
 // ==========================================
 // LÓGICA DO TIMER DE 10 SEGUNDOS
 // ==========================================
